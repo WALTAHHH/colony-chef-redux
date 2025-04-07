@@ -1,4 +1,4 @@
-import { recipes } from 'recipeData';
+import { recipes } from './recipeData';
 // Define the predefined crew
 const predefinedCrew = [
   {
