@@ -25,7 +25,7 @@ export const initialInventory = {
     return ingredientEmojiMap[item] || '📦';
   };
   
-  import { addItems, removeItems } from 'inventoryUtils';
+  import { addItems, removeItems } from '../utils/inventoryUtils';
   // Helper function to add items to inventory
   export const addToInventory = (inventory, item, quantity) => {
     return addItems(inventory, { [item]: quantity });
