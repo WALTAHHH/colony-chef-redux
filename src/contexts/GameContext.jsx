@@ -11,6 +11,12 @@ import { hasItems } from '../utils/inventoryUtils';
 
 const GameContext = createContext();
 
+export const GAME_STATE = {
+  PLAYING: 'PLAYING',
+  VICTORY: 'VICTORY',
+  DEFEAT: 'DEFEAT'
+};
+
 const initialState = {
   inventory: initialInventory,
   crew: initialCrew,
@@ -20,7 +26,8 @@ const initialState = {
   progressToNext: 0,
   activeScenario: null,
   scenarioHistory: [],
-  mealAssignments: {}
+  mealAssignments: {},
+  gameState: GAME_STATE.PLAYING
 };
 
 const gameReducer = (state, action) => {
@@ -39,6 +46,8 @@ const gameReducer = (state, action) => {
       return { ...state, scenarioHistory: [...state.scenarioHistory, action.payload] };
     case 'SET_MEAL_ASSIGNMENTS':
       return { ...state, mealAssignments: action.payload };
+    case 'SET_GAME_STATE':
+      return { ...state, gameState: action.payload };
     default:
       return state;
   }
@@ -75,6 +84,7 @@ export const GameProvider = ({ children }) => {
 
   const value = {
     ...state,
+    GAME_STATE,
     getItemEmoji,
     canCraftRecipe,
     craftRecipe,
@@ -84,7 +94,8 @@ export const GameProvider = ({ children }) => {
     setProgress: (progress) => dispatch({ type: 'SET_PROGRESS', payload: progress }),
     setActiveScenario: (scenario) => dispatch({ type: 'SET_ACTIVE_SCENARIO', payload: scenario }),
     addScenarioToHistory: (scenario) => dispatch({ type: 'ADD_SCENARIO_TO_HISTORY', payload: scenario }),
-    setMealAssignments: (assignments) => dispatch({ type: 'SET_MEAL_ASSIGNMENTS', payload: assignments })
+    setMealAssignments: (assignments) => dispatch({ type: 'SET_MEAL_ASSIGNMENTS', payload: assignments }),
+    setGameState: (state) => dispatch({ type: 'SET_GAME_STATE', payload: state })
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
