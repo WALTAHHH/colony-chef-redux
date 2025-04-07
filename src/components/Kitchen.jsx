@@ -32,6 +32,16 @@ const Kitchen = () => {
     maxHeight: '70vh',
     position: 'relative'
   };
+  
+  const sectionStyles = {
+    marginBottom: '20px',
+    padding: '15px',
+    backgroundColor: '#ffecb3',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  };
+
+  // eslint-disable-next-line no-unused-vars
   const menuToggleStyles = {
     position: 'fixed',
     left: '20px',
@@ -44,14 +54,6 @@ const Kitchen = () => {
     cursor: 'pointer',
     zIndex: 1000,
     boxShadow: '2px 0 5px rgba(0,0,0,0.2)'
-  };
-  
-  const sectionStyles = {
-    marginBottom: '20px',
-    padding: '15px',
-    backgroundColor: '#ffecb3',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   };
   
   const gridStyles = {
@@ -84,6 +86,7 @@ const Kitchen = () => {
     transition: 'background-color 0.2s'
   };
   
+  // eslint-disable-next-line no-unused-vars
   const disabledButtonStyles = {
     ...buttonStyles,
     backgroundColor: '#ccc',
@@ -91,6 +94,7 @@ const Kitchen = () => {
   };
   
   
+  // eslint-disable-next-line no-unused-vars
   const compactSectionStyles = {
     ...sectionStyles,
     padding: '10px',

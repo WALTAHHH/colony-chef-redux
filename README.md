@@ -1,4 +1,4 @@
-# Rosebud Colony Chef
+# Colony Chef
 
 A web-based game where you manage a colony's food resources and crew morale.
 
