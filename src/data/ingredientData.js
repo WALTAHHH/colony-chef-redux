@@ -1,3 +1,5 @@
+import { addItems, removeItems } from '../utils/inventoryUtils';
+
 // Define initial inventory
 export const initialInventory = {
     vegetables: 5,
@@ -25,7 +27,6 @@ export const initialInventory = {
     return ingredientEmojiMap[item] || '📦';
   };
   
-  import { addItems, removeItems } from '../utils/inventoryUtils';
   // Helper function to add items to inventory
   export const addToInventory = (inventory, item, quantity) => {
     return addItems(inventory, { [item]: quantity });
