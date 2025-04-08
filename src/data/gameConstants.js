@@ -1,34 +1,66 @@
-// Game State Constants
-export const GAME_STATE = {
-    PLAYING: 'playing',
-    VICTORY: 'victory',
-    DEFEAT: 'defeat'
-  };
-  
-  // Hunger Constants
-  export const MAX_HUNGER = 100;
-  export const BASE_HUNGER_DECREASE = 25;
-  export const HARDWORKING_HUNGER_BONUS = 10;
-  export const AGILE_HUNGER_BONUS = 5;
-  export const DISCIPLINED_HUNGER_BONUS = 5;
-  
-  // Meal Preference Modifiers
-  export const FAVORITE_MEAL_BONUS = 1.5;
-  export const DISLIKED_MEAL_PENALTY = 0.7;
-  
-  // Progress Constants
-  export const MAX_DAILY_PROGRESS = 20;
-  
-  // Scenario Constants
-  export const SCENARIO_TRIGGER_CHANCE = 0.7;
-  
-  // Inventory Constants
-  export const MAX_RANDOM_SUPPLY = 3;
-  
-  // Game Phases
-  export const GAME_PHASES = {
-    PLANNING: 1,
-    PREPARATION: 2,
-    SERVING: 3,
-    END_OF_DAY: 4
-  };
+// Game state constants
+export const GAME_STATES = {
+  PLAYING: 'PLAYING',
+  VICTORY: 'VICTORY',
+  DEFEAT: 'DEFEAT'
+};
+
+// Game phase constants
+export const GAME_PHASES = {
+  PLANNING: 0,
+  PREPARATION: 1,
+  SERVING: 2,
+  END_OF_DAY: 3
+};
+
+// Hunger constants
+export const HUNGER = {
+  MAX_HUNGER: 100,
+  BASE_HUNGER_DECREASE: 10,
+  HUNGER_BONUS: {
+    ENGINEER: 5,
+    SCIENTIST: 3,
+    FARMER: 7,
+    MEDIC: 4
+  }
+};
+
+// Meal preference modifiers
+export const MEAL_PREFERENCES = {
+  FAVORITE_MEAL_BONUS: 15,
+  DISLIKED_MEAL_PENALTY: -10
+};
+
+// Progress constants
+export const PROGRESS = {
+  MAX_DAILY_PROGRESS: 100,
+  BASE_DAILY_PROGRESS: 10,
+  PROGRESS_BONUS: {
+    HIGH_MORALE: 5,
+    LOW_MORALE: -5
+  }
+};
+
+// Scenario constants
+export const SCENARIO = {
+  TRIGGER_CHANCE: 0.3,
+  HUNGER_PENALTY: -10,
+  MORALE_PENALTY: -15
+};
+
+// Inventory constants
+export const INVENTORY = {
+  MAX_RANDOM_SUPPLY: 5,
+  INITIAL_SUPPLY_MULTIPLIER: 2
+};
+
+// Crew constants
+export const CREW = {
+  MAX_CREW_SIZE: 10,
+  MIN_CREW_SIZE: 3,
+  MORALE: {
+    MAX_MORALE: 100,
+    MIN_MORALE: 0,
+    BASE_MORALE_CHANGE: 5
+  }
+};

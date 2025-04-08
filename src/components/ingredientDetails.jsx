@@ -1,88 +1,232 @@
 import React from 'react';
-import { useGameState } from '../contexts/GameContext';
-const IngredientDetails = ({ item, quantity, compact = false, showCookButton = false, onCook }) => {
-  const { recipes, canCraftRecipe, getItemEmoji, gamePhase } = useGameState();
-  
-  const itemStyles = {
-    padding: compact ? '5px' : '10px',
-    backgroundColor: '#fff',
-    borderRadius: '5px',
-    textAlign: 'center',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: compact ? '0.8em' : '1em',
-    position: 'relative',
-    overflow: 'hidden'
-  };
-  const depletedOverlayStyles = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 0, 0, 0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#ff0000',
-    fontWeight: 'bold',
-    fontSize: '1.2em'
-  };
-  
-  const buttonStyles = {
-    backgroundColor: '#8d6e63',
-    color: 'white',
-    border: 'none',
-    padding: compact ? '3px 6px' : '5px 10px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    margin: '5px 0',
-    fontSize: compact ? '0.8em' : '1em',
-    transition: 'background-color 0.2s'
-  };
-  
-  const disabledButtonStyles = {
-    ...buttonStyles,
-    backgroundColor: '#ccc',
-    cursor: 'not-allowed'
-  };
-  
-  const isRecipe = recipes && recipes[item];
-  
-  return (
-    <div style={itemStyles}>
-      <div style={{ fontSize: '1.5em' }}>{getItemEmoji(item)}</div>
-      <div>{item}</div>
-      
-      {isRecipe ? (
-        <>
-          <div style={{ fontSize: compact ? '0.7em' : '0.9em', color: '#666', margin: '2px 0' }}>
-            Hunger: +{recipes[item].hungerValue}
-          </div>
-          {showCookButton && gamePhase === 2 && (
-            <button 
-              style={canCraftRecipe(item) ? buttonStyles : disabledButtonStyles}
-              onClick={() => onCook(item)}
-              disabled={!canCraftRecipe(item)}
-            >
-              Cook
-            </button>
-          )}
-        </>
-      ) : (
-        <>
-          <div><strong>x{quantity || 0}</strong></div>
-          {quantity <= 0 && (
-            <div style={depletedOverlayStyles}>
-              Depleted
+import { ingredients } from '../data/ingredientData';
+import { recipes } from '../data/recipeData';
+import { gameTheme } from '../theme/gameTheme';
+
+const IngredientDetails = ({ item, onClose, onCook }) => {
+  const ingredient = ingredients[item];
+  const recipe = recipes[item];
+
+  const renderContent = () => {
+    if (ingredient) {
+      return (
+        <div style={contentStyles}>
+          <h3 style={titleStyles}>{ingredient.name}</h3>
+          <p style={descriptionStyles}>{ingredient.description}</p>
+          <div style={statsStyles}>
+            <div style={statStyles}>
+              <span style={statLabelStyles}>Base Value:</span>
+              <span style={statValueStyles}>{ingredient.baseValue}</span>
             </div>
-          )}
-        </>
+            <div style={statStyles}>
+              <span style={statLabelStyles}>Spoilage Rate:</span>
+              <span style={statValueStyles}>{ingredient.spoilageRate}</span>
+            </div>
+            <div style={statStyles}>
+              <span style={statLabelStyles}>Storage Space:</span>
+              <span style={statValueStyles}>{ingredient.storageSpace}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (recipe) {
+      return (
+        <div style={contentStyles}>
+          <div style={recipeTitleContainerStyles}>
+            <h3 style={titleStyles}>{recipe.name}</h3>
+            {onCook && (
+              <button style={cookButtonStyles} onClick={onCook}>
+                Cook 🔥
+              </button>
+            )}
+          </div>
+          <p style={descriptionStyles}>{recipe.description}</p>
+          <div style={statsContainerStyles}>
+            <div style={statsColumnStyles}>
+              <h4 style={sectionTitleStyles}>Stats</h4>
+              <div style={statsStyles}>
+                <div style={statStyles}>
+                  <span style={statLabelStyles}>Hunger Value:</span>
+                  <span style={statValueStyles}>{recipe.hungerValue}</span>
+                </div>
+                <div style={statStyles}>
+                  <span style={statLabelStyles}>Morale Bonus:</span>
+                  <span style={statValueStyles}>{recipe.moraleBonus}</span>
+                </div>
+                <div style={statStyles}>
+                  <span style={statLabelStyles}>Prep Time:</span>
+                  <span style={statValueStyles}>{recipe.preparationTime}</span>
+                </div>
+              </div>
+            </div>
+            <div style={statsColumnStyles}>
+              <h4 style={sectionTitleStyles}>Required Ingredients</h4>
+              <div style={ingredientsStyles}>
+                {Object.entries(recipe.ingredients).map(([ingredient, quantity]) => (
+                  <div key={ingredient} style={ingredientStyles}>
+                    <span style={ingredientNameStyles}>
+                      {ingredients[ingredient]?.name}
+                    </span>
+                    <span style={ingredientQuantityStyles}>x{quantity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div style={containerStyles}>
+      {renderContent()}
+      {onClose && (
+        <button style={closeButtonStyles} onClick={onClose}>
+          ✕
+        </button>
       )}
     </div>
   );
 };
+
+const containerStyles = {
+  position: 'fixed',
+  bottom: '0',
+  left: '0',
+  right: '0',
+  padding: '20px',
+  paddingBottom: '80px',
+  backgroundColor: gameTheme.colors.panel,
+  color: gameTheme.colors.text,
+  borderTop: `3px solid ${gameTheme.colors.border}`,
+  zIndex: 99,
+  ...gameTheme.common.panel,
+  ...gameTheme.common.pixelated,
+};
+
+const contentStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '15px',
+  maxWidth: '1200px',
+  margin: '0 auto',
+};
+
+const recipeTitleContainerStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '20px',
+};
+
+const titleStyles = {
+  fontSize: '24px',
+  fontWeight: 'bold',
+  margin: '0',
+  color: gameTheme.colors.highlightPrimary,
+  textTransform: 'uppercase',
+};
+
+const descriptionStyles = {
+  fontSize: '16px',
+  color: gameTheme.colors.text,
+  margin: '0',
+  fontStyle: 'italic',
+};
+
+const statsContainerStyles = {
+  display: 'flex',
+  gap: '40px',
+};
+
+const statsColumnStyles = {
+  flex: 1,
+};
+
+const sectionTitleStyles = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  margin: '0 0 10px 0',
+  color: gameTheme.colors.text,
+  borderBottom: `2px solid ${gameTheme.colors.border}`,
+  paddingBottom: '5px',
+};
+
+const statsStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const statStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '4px 0',
+};
+
+const statLabelStyles = {
+  fontSize: '14px',
+  color: gameTheme.colors.textDim,
+};
+
+const statValueStyles = {
+  fontSize: '16px',
+  fontWeight: 'bold',
+  color: gameTheme.colors.text,
+};
+
+const ingredientsStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const ingredientStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '4px 0',
+};
+
+const ingredientNameStyles = {
+  fontSize: '14px',
+  color: gameTheme.colors.text,
+};
+
+const ingredientQuantityStyles = {
+  fontSize: '14px',
+  fontWeight: 'bold',
+  color: gameTheme.colors.highlightSecondary,
+};
+
+const cookButtonStyles = {
+  ...gameTheme.common.button,
+  backgroundColor: gameTheme.colors.highlightPrimary,
+  color: gameTheme.colors.background,
+  padding: '8px 16px',
+  fontSize: '16px',
+};
+
+const closeButtonStyles = {
+  ...gameTheme.common.button,
+  position: 'absolute',
+  top: '20px',
+  right: '20px',
+  padding: '8px 12px',
+  minWidth: '32px',
+  backgroundColor: 'transparent',
+  color: gameTheme.colors.textDim,
+  border: `2px solid ${gameTheme.colors.border}`,
+  ':hover': {
+    backgroundColor: gameTheme.colors.border,
+    color: gameTheme.colors.text,
+  }
+};
+
 export default IngredientDetails;

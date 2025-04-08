@@ -1,36 +1,307 @@
 import React, { useState } from 'react';
-import { useGameState } from '../contexts/GameContext';
+import { useGame } from '../context/GameContext';
+import { recipes } from '../data/recipeData';
+import { ingredients } from '../data/ingredientData';
 import InventoryGrid from './InventoryGrid';
-import IngredientDetails from './ingredientDetails';
+import IngredientDetails from './IngredientDetails';
 import MealAssignmentTable from './MealAssignmentTable';
+import { gameTheme } from '../theme/gameTheme';
+
+// Pixel art icons for tabs (16x16 unicode characters that look pixelated)
+const ICONS = {
+  inventory: '🎒',
+  recipes: '📜',
+  cooked: '🍲',
+};
 
 const Kitchen = () => {
-  const { sidebarOpen, setSidebarOpen, getItemEmoji } = useGameState();
-  const [activeSection, setActiveSection] = useState('profile');
+  const { gameState, cookMeal } = useGame();
+  const { inventory, cookedMeals } = gameState;
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [activeTab, setActiveTab] = useState('inventory');
   const { 
     gamePhase,
     meals, 
-    recipes, 
+    recipes: gameRecipes, 
     canCraftRecipe, 
     craftRecipe,
     crew,
     setGamePhase,
     removeFromInventory,
-    inventory
-  } = useGameState();
+  } = gameState;
   
+  const handleCook = (recipeId) => {
+    if (cookMeal(recipeId)) {
+      setSelectedRecipe(null);
+    }
+  };
+
+  const kitchenStyles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '20px',
+      height: '100%',
+      ...gameTheme.common.panel,
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        right: '8px',
+        bottom: '8px',
+        border: `2px dashed ${gameTheme.colors.border}`,
+        opacity: 0.5,
+        pointerEvents: 'none'
+      }
+    },
+    tabs: {
+      display: 'flex',
+      gap: '10px',
+      borderBottom: `2px solid ${gameTheme.colors.border}`,
+      paddingBottom: '10px',
+      position: 'relative',
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: '-2px',
+        left: '0',
+        right: '0',
+        height: '2px',
+        background: `repeating-linear-gradient(
+          to right,
+          ${gameTheme.colors.border} 0,
+          ${gameTheme.colors.border} 4px,
+          transparent 4px,
+          transparent 8px
+        )`,
+      }
+    },
+    content: {
+      flex: 1,
+      minHeight: '300px',
+      overflowY: 'auto',
+      position: 'relative',
+      padding: '4px',
+      '&::-webkit-scrollbar': {
+        width: '12px',
+      },
+      '&::-webkit-scrollbar-track': {
+        background: gameTheme.colors.background,
+        border: `2px solid ${gameTheme.colors.border}`,
+      },
+      '&::-webkit-scrollbar-thumb': {
+        background: gameTheme.colors.border,
+        border: `2px solid ${gameTheme.colors.background}`,
+        '&:hover': {
+          background: gameTheme.colors.highlightPrimary,
+        }
+      }
+    },
+    details: {
+      marginTop: '20px',
+      ...gameTheme.common.panel,
+    },
+    cornerDecoration: {
+      position: 'absolute',
+      width: '16px',
+      height: '16px',
+      pointerEvents: 'none',
+      '&.top-left': {
+        top: '4px',
+        left: '4px',
+        borderTop: `2px solid ${gameTheme.colors.border}`,
+        borderLeft: `2px solid ${gameTheme.colors.border}`,
+      },
+      '&.top-right': {
+        top: '4px',
+        right: '4px',
+        borderTop: `2px solid ${gameTheme.colors.border}`,
+        borderRight: `2px solid ${gameTheme.colors.border}`,
+      },
+      '&.bottom-left': {
+        bottom: '4px',
+        left: '4px',
+        borderBottom: `2px solid ${gameTheme.colors.border}`,
+        borderLeft: `2px solid ${gameTheme.colors.border}`,
+      },
+      '&.bottom-right': {
+        bottom: '4px',
+        right: '4px',
+        borderBottom: `2px solid ${gameTheme.colors.border}`,
+        borderRight: `2px solid ${gameTheme.colors.border}`,
+      }
+    }
+  };
+
+  const tabStyles = (isActive) => ({
+    ...gameTheme.common.button,
+    backgroundColor: isActive ? gameTheme.colors.highlightPrimary : gameTheme.colors.panel,
+    color: isActive ? gameTheme.colors.background : gameTheme.colors.text,
+    padding: '8px 16px',
+    fontSize: '12px',
+    border: `2px solid ${isActive ? gameTheme.colors.highlightPrimary : gameTheme.colors.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    position: 'relative',
+    '&::before': isActive ? {
+      content: '""',
+      position: 'absolute',
+      bottom: '-12px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '0',
+      height: '0',
+      borderLeft: '6px solid transparent',
+      borderRight: '6px solid transparent',
+      borderTop: `6px solid ${gameTheme.colors.highlightPrimary}`,
+    } : {},
+  });
+
+  const recipesStyles = {
+    container: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+      gap: '12px',
+      padding: '20px'
+    },
+    recipe: {
+      ...gameTheme.common.panel,
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      padding: '12px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
+        borderColor: gameTheme.colors.highlightPrimary,
+      }
+    },
+    recipeName: {
+      fontSize: '14px',
+      fontWeight: 'bold',
+      color: gameTheme.colors.text,
+      textAlign: 'center',
+      padding: '4px 0',
+      borderBottom: `1px solid ${gameTheme.colors.border}`,
+    },
+    recipeStats: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '12px',
+      fontSize: '12px',
+      color: gameTheme.colors.textDim,
+    },
+    recipeStat: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    },
+    recipeIcon: {
+      fontSize: '16px',
+      marginRight: '4px',
+    }
+  };
+
+  const cookedStyles = {
+    container: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gap: '15px',
+      padding: '20px'
+    },
+    meal: {
+      ...gameTheme.common.panel,
+      position: 'relative',
+      '&::after': {
+        content: '"✓"',
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        color: gameTheme.colors.highlightPrimary,
+        fontSize: '16px',
+        fontWeight: 'bold'
+      }
+    },
+    mealName: {
+      fontSize: '14px',
+      fontWeight: 'bold',
+      color: gameTheme.colors.text,
+      marginBottom: '5px'
+    },
+    mealDescription: {
+      fontSize: '12px',
+      color: gameTheme.colors.text,
+      opacity: 0.8
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'inventory':
+        return (
+          <InventoryGrid
+            inventory={inventory}
+            ingredients={ingredients}
+            onSelect={setSelectedRecipe}
+          />
+        );
+      case 'recipes':
+        return renderRecipes();
+      case 'cooked':
+        return (
+          <div style={cookedStyles.container}>
+            {cookedMeals.map((mealId) => (
+              <div key={mealId} style={cookedStyles.meal}>
+                <div style={cookedStyles.mealName}>
+                  {recipes[mealId]?.name}
+                </div>
+                <div style={cookedStyles.mealDescription}>
+                  {recipes[mealId]?.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderRecipes = () => (
+    <div style={recipesStyles.container}>
+      {Object.entries(recipes).map(([id, recipe]) => (
+        <div
+          key={id}
+          style={recipesStyles.recipe}
+          onClick={() => setSelectedRecipe(id)}
+        >
+          <div style={recipesStyles.recipeName}>
+            <span style={recipesStyles.recipeIcon}>📖</span>
+            {recipe.name}
+          </div>
+          <div style={recipesStyles.recipeStats}>
+            <div style={recipesStyles.recipeStat}>
+              <span>🍖</span>{recipe.hungerValue}
+            </div>
+            <div style={recipesStyles.recipeStat}>
+              <span>😊</span>{recipe.moraleBonus}
+            </div>
+            <div style={recipesStyles.recipeStat}>
+              <span>⏱️</span>{recipe.preparationTime}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   const handleDragStart = (e, meal, index) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({ meal, index }));
-  };
-  
-  const kitchenStyles = {
-    flex: '2',
-    padding: '20px',
-    overflow: 'auto',
-    backgroundColor: '#fff3e0',
-    maxHeight: '70vh',
-    position: 'relative'
   };
   
   const sectionStyles = {
@@ -39,21 +310,6 @@ const Kitchen = () => {
     backgroundColor: '#ffecb3',
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const menuToggleStyles = {
-    position: 'fixed',
-    left: '20px',
-    top: '70px',
-    backgroundColor: '#8d6e63',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0 4px 4px 0',
-    padding: '10px 15px',
-    cursor: 'pointer',
-    zIndex: 1000,
-    boxShadow: '2px 0 5px rgba(0,0,0,0.2)'
   };
   
   const gridStyles = {
@@ -86,480 +342,51 @@ const Kitchen = () => {
     transition: 'background-color 0.2s'
   };
   
-  // eslint-disable-next-line no-unused-vars
   const disabledButtonStyles = {
     ...buttonStyles,
     backgroundColor: '#ccc',
     cursor: 'not-allowed'
   };
   
-  
-  // eslint-disable-next-line no-unused-vars
-  const compactSectionStyles = {
-    ...sectionStyles,
-    padding: '10px',
-    marginBottom: '10px'
-  };
-  
-  const compactGridStyles = {
-    ...gridStyles,
-    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
-    gap: '5px'
-  };
-  
-  const compactItemStyles = {
-    ...itemStyles,
-    padding: '5px',
-    fontSize: '0.8em'
-  };
-  
-  const sidebarStyles = {
-    position: 'fixed',
-    left: sidebarOpen ? '0' : '-300px',
-    top: '0',
-    bottom: '0',
-    width: '300px',
-    maxWidth: '80vw',
-    backgroundColor: '#ffecb3',
-    boxShadow: '2px 0 5px rgba(0,0,0,0.2)',
-    zIndex: 100,
-    transition: 'left 0.3s ease',
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'hidden'
-  };
-  
-  const closeButtonStyles = {
-    position: 'absolute',
-    right: '10px',
-    top: '10px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    fontSize: '20px',
-    cursor: 'pointer',
-    color: '#5d4037'
-  };
-  
-  const menuHeaderStyles = {
-    padding: '15px',
-    borderBottom: '1px solid #e8d5b0',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  };
-  
-  const menuNavStyles = {
-    display: 'flex',
-    borderBottom: '1px solid #e8d5b0',
-    backgroundColor: '#ffe082'
-  };
-  
-  const menuNavItemStyles = (isActive) => ({
-    flex: 1,
-    padding: '10px',
-    textAlign: 'center',
-    cursor: 'pointer',
-    backgroundColor: isActive ? '#ffecb3' : 'transparent',
-    borderBottom: isActive ? '3px solid #8d6e63' : '3px solid transparent',
-    fontWeight: isActive ? 'bold' : 'normal'
-  });
-  
-  const menuContentStyles = {
-    padding: '15px',
-    overflowY: 'auto',
-    flex: 1
-  };
-  
-  const overlayStyles = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 99,
-    display: sidebarOpen ? 'block' : 'none',
-    cursor: 'pointer'
-  };
-  
   return (
-    <>
+    <div style={kitchenStyles.container}>
+      <div style={kitchenStyles.cornerDecoration} className="top-left" />
+      <div style={kitchenStyles.cornerDecoration} className="top-right" />
+      <div style={kitchenStyles.cornerDecoration} className="bottom-left" />
+      <div style={kitchenStyles.cornerDecoration} className="bottom-right" />
       
-      <div 
-        style={overlayStyles} 
-        onClick={() => setSidebarOpen(false)}
-        role="button" 
-        aria-label="Close menu"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Escape' && setSidebarOpen(false)}
-      ></div>
-      
-      <div style={kitchenStyles}>
-        {gamePhase === 2 && (
-          <nav style={{
-            display: 'flex',
-            flexDirection: 'row',
-            backgroundColor: '#ffe082',
-            borderRadius: '8px 8px 0 0',
-            marginBottom: '15px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            overflow: 'auto'
-          }}>
-            {['inventory', 'recipes', 'meals'].map((tab) => (
-              <button 
-                key={tab}
-                style={{
-                  padding: '12px 20px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  backgroundColor: activeTab === tab ? '#ffecb3' : 'transparent',
-                  borderBottom: activeTab === tab ? '3px solid #8d6e63' : '3px solid transparent',
-                  fontWeight: activeTab === tab ? 'bold' : 'normal',
-                  flex: '1 0 auto',
-                  minWidth: '120px',
-                  border: 'none',
-                  fontSize: '16px',
-                  color: '#5d4037'
-                }}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab === 'inventory' && `${getItemEmoji('vegetables')} Inventory`}
-                {tab === 'recipes' && `${getItemEmoji('stew')} Recipes`}
-                {tab === 'meals' && `${getItemEmoji('fishRice')} Prepared Meals`}
-              </button>
-            ))}
-          </nav>
-        )}
-      <div style={sidebarStyles}>
-        <div style={menuHeaderStyles}>
-          <h2>Expedition Menu</h2>
-          <button 
-            style={closeButtonStyles}
-            onClick={() => setSidebarOpen(false)}
-          >
-            ✕
-          </button>
-        </div>
-        
-        <div style={menuNavStyles}>
-          <div 
-            style={menuNavItemStyles(activeSection === 'profile')}
-            onClick={() => setActiveSection('profile')}
-          >
-            📋 Profile
-          </div>
-          <div 
-            style={menuNavItemStyles(activeSection === 'inventory')}
-            onClick={() => setActiveSection('inventory')}
-          >
-            {getItemEmoji('vegetables')} Inventory
-          </div>
-          <div 
-            style={menuNavItemStyles(activeSection === 'recipes')}
-            onClick={() => setActiveSection('recipes')}
-          >
-            {getItemEmoji('stew')} Recipes
-          </div>
-          <div 
-            style={menuNavItemStyles(activeSection === 'colonists')}
-            onClick={() => setActiveSection('colonists')}
-          >
-            👥 Colonists
-          </div>
-        </div>
-        
-        <div style={menuContentStyles}>
-          {activeSection === 'profile' && (
-            <div>
-              <h3>Expedition Profile</h3>
-              <div style={{ padding: '10px', backgroundColor: '#fff', borderRadius: '8px', marginBottom: '15px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '3em' }}>🧭</span>
-                  <h3 style={{ margin: '5px 0' }}>Frontier Expedition</h3>
-                </div>
-                <div style={{ fontSize: '0.9em', color: '#5d4037' }}>
-                  <p><strong>Mission:</strong> Cook and serve meals to keep the crew fed and motivated during your journey through the frontier.</p>
-                  <p><strong>Goal:</strong> Reach the destination with all crew members alive and well-fed.</p>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button style={{
-                  backgroundColor: '#4caf50',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 15px',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px'
-                }}>
-                  <span>{getItemEmoji('stew')}</span> Save Expedition
-                </button>
-                
-                <button style={{
-                  backgroundColor: '#2196f3',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 15px',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px'
-                }}>
-                  <span>{getItemEmoji('fishRice')}</span> Load Expedition
-                </button>
-                
-                <button style={{
-                  backgroundColor: '#ff9800',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 15px',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px'
-                }}>
-                  <span>❓</span> Help & Tutorial
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {activeSection === 'inventory' && (
-            <div>
-              <h3>Inventory</h3>
-              <InventoryGrid compact={true} />
-            </div>
-          )}
-          
-          {activeSection === 'recipes' && (
-            <div>
-              <h3>Recipes</h3>
-              <div style={compactGridStyles}>
-                {Object.entries(recipes).map(([recipe, ingredients]) => (
-                  <IngredientDetails
-                    key={recipe}
-                    item={recipe}
-                    compact={true}
-                    showCookButton={true}
-                    onCook={() => {
-                      if (canCraftRecipe(recipe)) {
-                        Object.entries(recipes[recipe]).forEach(([ingredient, amount]) => {
-                          if (ingredient !== 'hungerValue') {
-                            removeFromInventory(ingredient, amount);
-                          }
-                        });
-                        craftRecipe(recipe);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {activeSection === 'colonists' && (
-            <div>
-              <h3>Colonists</h3>
-              <div style={compactGridStyles}>
-                {crew.map(member => (
-                  <div key={member.id} style={compactItemStyles}>
-                    <div style={{ fontSize: '1.5em' }}>{member.avatar}</div>
-                    <div>{member.name}</div>
-                    <div style={{ fontSize: '0.7em', margin: '2px 0' }}>
-                      Hunger: {member.hunger}%
-                    </div>
-                    <div style={{ fontSize: '0.7em', color: '#666' }}>
-                      Role: {member.role}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+      <div style={kitchenStyles.tabs}>
+        <button 
+          style={tabStyles(activeTab === 'inventory')}
+          onClick={() => setActiveTab('inventory')}
+        >
+          {ICONS.inventory} Inventory
+        </button>
+        <button 
+          style={tabStyles(activeTab === 'recipes')}
+          onClick={() => setActiveTab('recipes')}
+        >
+          {ICONS.recipes} Recipes
+        </button>
+        <button
+          style={tabStyles(activeTab === 'cooked')}
+          onClick={() => setActiveTab('cooked')}
+        >
+          {ICONS.cooked} Cooked Meals
+        </button>
       </div>
-      
-      {gamePhase === 2 && (
-        <div>
-        {activeTab === 'inventory' && (
-          <div style={sectionStyles}>
-            <h2>Available Ingredients</h2>
-            <InventoryGrid compact={false} />
-            {Object.entries(inventory).some(([_, quantity]) => isNaN(quantity) || quantity === undefined) && (
-              <div style={{
-                marginTop: '15px',
-                padding: '10px',
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffeeba',
-                borderRadius: '4px',
-                color: '#856404'
-              }}>
-                <p>Some ingredient quantities are invalid. Please check your inventory.</p>
-              </div>
-            )}
-          </div>
-        )}
-          
-          {activeTab === 'recipes' && (
-            <div style={sectionStyles}>
-              <h2>Recipes</h2>
-              <div style={gridStyles}>
-                {Object.entries(recipes).map(([recipe, ingredients]) => (
-                  <IngredientDetails
-                    key={recipe}
-                    item={recipe}
-                    compact={false}
-                    showCookButton={true}
-                    onCook={() => {
-                      if (canCraftRecipe(recipe)) {
-                        Object.entries(recipes[recipe]).forEach(([ingredient, amount]) => {
-                          if (ingredient !== 'hungerValue') {
-                            removeFromInventory(ingredient, amount);
-                          }
-                        });
-                        craftRecipe(recipe);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {activeTab === 'meals' && (
-            <div style={sectionStyles}>
-              <h2>Prepared Meals</h2>
-              <div style={gridStyles}>
-                {meals.length > 0 ? (
-                  meals.map((meal, index) => (
-                    <div 
-                      key={index} 
-                      style={{cursor: 'grab'}}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, meal, index)}
-                    >
-                      <IngredientDetails 
-                        item={meal}
-                        compact={false}
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ 
-                    padding: '20px', 
-                    color: '#888', 
-                    fontSize: '1em',
-                    textAlign: 'center',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '8px',
-                    width: '100%'
-                  }}>
-                    No meals prepared yet. Cook something from the Recipes tab!
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {gamePhase === 2 && (
-        <div style={{ marginTop: 'auto', display: 'flex', gap: '10px', padding: '15px 0' }}>
-          <button 
-            style={{
-              backgroundColor: '#795548',
-              color: 'white',
-              border: 'none',
-              padding: '12px 15px',
-              fontSize: '16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }} 
-            onClick={() => setGamePhase(1)}
-          >
-            <span style={{ fontSize: '20px', marginRight: '5px' }}>←</span> Back to Planning
-          </button>
-          <button 
-            style={{
-              flex: 1,
-              backgroundColor: '#5d4037',
-              color: 'white',
-              border: 'none',
-              padding: '12px',
-              fontSize: '16px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }} 
-            onClick={() => {
-              if (meals.length === 0) {
-                const confirmProceed = window.confirm("You haven't prepared any meals. The crew will go hungry. Are you sure you want to proceed?");
-                if (confirmProceed) {
-                  setGamePhase(3);
-                }
-              } else {
-                setGamePhase(3);
-              }
-            }}
-          >
-            Proceed to Serving
-          </button>
-        </div>
-      )}
-      {gamePhase === 3 && (
-        <>
-          <div style={sectionStyles}>
-            <h2>Available Meals</h2>
-            <p>These are the meals you've prepared. Drag them to assign to crew members below.</p>
-            <div style={gridStyles}>
-              {meals.length > 0 ? (
-                meals.map((meal, index) => (
-                  <div 
-                    key={index} 
-                    style={{cursor: 'grab'}}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, meal, index)}
-                  >
-                    <IngredientDetails 
-                      item={meal}
-                      compact={false}
-                    />
-                  </div>
-                ))
-              ) : (
-                <div style={{ 
-                  padding: '20px', 
-                  color: '#888', 
-                  fontSize: '1em',
-                  textAlign: 'center',
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: '8px',
-                  width: '100%'
-                }}>
-                  No meals prepared yet. You'll need to go back and prepare some food first.
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <MealAssignmentTable />
-        </>
+      <div style={kitchenStyles.content}>
+        {renderTabContent()}
+      </div>
+      {selectedRecipe && (
+        <IngredientDetails
+          item={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onCook={() => handleCook(selectedRecipe)}
+        />
       )}
     </div>
-    </>
   );
 };
+
 export default Kitchen;

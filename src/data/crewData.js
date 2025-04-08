@@ -87,3 +87,65 @@ export const traitEffects = {
 const randomCrew = generateRandomCrew(2);
 // Export the combined crew
 export const initialCrew = [...predefinedCrew, ...randomCrew];
+
+// Define all available crew roles
+export const crewRoles = {
+  engineer: {
+    name: "Engineer",
+    description: "Maintains and repairs colony equipment",
+    baseHunger: 20,
+    favoriteMeals: ["curry", "stew"],
+    dislikedMeals: ["simpleSalad"]
+  },
+  scientist: {
+    name: "Scientist",
+    description: "Conducts research and experiments",
+    baseHunger: 15,
+    favoriteMeals: ["fishRice", "grilledFish"],
+    dislikedMeals: ["riceBowl"]
+  },
+  farmer: {
+    name: "Farmer",
+    description: "Grows and harvests food",
+    baseHunger: 25,
+    favoriteMeals: ["stew", "riceBowl"],
+    dislikedMeals: ["grilledFish"]
+  },
+  medic: {
+    name: "Medic",
+    description: "Provides medical care to the crew",
+    baseHunger: 18,
+    favoriteMeals: ["simpleSalad", "fishRice"],
+    dislikedMeals: ["curry"]
+  }
+};
+
+// Helper function to get crew role by ID
+export const getCrewRole = (roleId) => {
+  return crewRoles[roleId];
+};
+
+// Helper function to get all crew role IDs
+export const getAllCrewRoleIds = () => {
+  return Object.keys(crewRoles);
+};
+
+// Helper function to check if a crew role exists
+export const crewRoleExists = (roleId) => {
+  return roleId in crewRoles;
+};
+
+// Helper function to generate a random crew member
+export const generateRandomCrewMember = () => {
+  const roleIds = getAllCrewRoleIds();
+  const roleId = roleIds[Math.floor(Math.random() * roleIds.length)];
+  const role = crewRoles[roleId];
+
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    name: `Crew Member ${Math.floor(Math.random() * 1000)}`,
+    role: roleId,
+    hunger: role.baseHunger,
+    morale: 50
+  };
+};

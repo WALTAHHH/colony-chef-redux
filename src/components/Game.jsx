@@ -1,9 +1,13 @@
 import React from 'react';
+import { GameProvider } from '../context/GameContext';
 import Kitchen from './Kitchen';
 import Status from './Status';
+import MealAssignmentTable from './MealAssignmentTable';
+import { GAME_STATES, GAME_PHASES } from '../data/gameConstants';
+import { useGame } from '../context/GameContext';
 import ScenarioModal from './ScenarioModal';
-import MenuButton from './MenuButton';
-import { useGameState } from '../contexts/GameContext';
+import PlanningPhase from './PlanningPhase';
+import { gameTheme } from '../theme/gameTheme';
 
 const Game = () => {
   const { 
@@ -12,39 +16,43 @@ const Game = () => {
     gameState, 
     GAME_STATE, 
     resetGame, 
-    day, 
-    setSidebarOpen 
-  } = useGameState();
+    day,
+    advancePhase,
+    advanceDay,
+  } = useGame();
+  
+  const { phase, state } = gameState;
   
   const gameStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    width: '100%',
-    fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#f9f3e5',
-    color: '#5d4037',
-    overflow: 'hidden'
+    container: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      backgroundColor: gameTheme.colors.background,
+      ...gameTheme.common.pixelated,
+      position: 'relative',
+      ...gameTheme.common.noiseOverlay,
+    },
+    content: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '20px',
+      padding: '20px',
+      paddingBottom: '0',
+      overflowY: 'auto',
+    }
   };
   
   const headerStyles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 20px',
-    backgroundColor: '#5d4037',
-    color: '#f9f3e5',
-    borderBottom: '3px solid #8d6e63'
-  };
-  const menuToggleStyles = {
-    backgroundColor: '#8d6e63',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '10px 15px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    marginRight: '10px'
+    padding: '15px 20px',
+    backgroundColor: gameTheme.colors.panel,
+    color: gameTheme.colors.text,
+    borderBottom: `3px solid ${gameTheme.colors.border}`,
+    ...gameTheme.common.panel,
   };
   
   const headerInfoStyles = {
@@ -56,162 +64,244 @@ const Game = () => {
   const weatherDisplayStyles = {
     display: 'flex',
     alignItems: 'center',
-    gap: '5px'
+    gap: '5px',
+    backgroundColor: gameTheme.colors.panel,
+    padding: '8px 12px',
+    borderRadius: '4px',
+    border: `2px solid ${gameTheme.colors.border}`,
   };
   
   const dayBadgeStyles = {
-    backgroundColor: '#8d6e63',
-    padding: '3px 8px',
-    borderRadius: '12px',
+    backgroundColor: gameTheme.colors.highlightPrimary,
+    padding: '5px 10px',
+    borderRadius: '4px',
     fontSize: '14px',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    color: gameTheme.colors.background,
   };
   
   const phaseIndicatorStyles = {
     display: 'flex',
-    gap: '5px'
+    gap: '8px'
   };
-  
+
   const phaseStepStyles = {
-    padding: '3px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    backgroundColor: 'transparent',
-    border: '1px solid #f9f3e5'
-  };
-  
-  const mainStyles = {
+    width: '30px',
+    height: '30px',
+    borderRadius: '4px',
+    border: `2px solid ${gameTheme.colors.border}`,
     display: 'flex',
-    flex: 1,
-    overflow: 'hidden',
-    flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-    minHeight: '0',
-    maxHeight: 'calc(100vh - 60px)' // Subtract header height
-  };
-  const gameOverStyles = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'white',
-    fontSize: '24px',
-    zIndex: 100
+    fontSize: '14px',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease'
   };
-  
-  const gameOverButtonStyles = {
-    backgroundColor: '#4caf50',
-    color: 'white',
-    border: 'none',
-    padding: '15px 30px',
-    fontSize: '18px',
+
+  const mainStyles = {
+    flex: 1,
+    padding: '20px',
+    overflowY: 'auto',
+    ...gameTheme.common.panel,
+  };
+
+  const footerStyles = {
+    backgroundColor: gameTheme.colors.panel,
+    borderTop: `3px solid ${gameTheme.colors.border}`,
+    padding: '12px 20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    ...gameTheme.common.panel,
+  };
+
+  const gameOverStyles = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: gameTheme.colors.panel,
+    padding: '30px',
     borderRadius: '8px',
-    cursor: 'pointer',
-    marginTop: '30px',
-    transition: 'background-color 0.3s'
+    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+    textAlign: 'center',
+    color: gameTheme.colors.text,
+    border: `4px solid ${gameTheme.colors.border}`,
+    ...gameTheme.common.pixelated,
   };
-// Get day of week name based on day number
-const getDayOfWeek = (dayNum) => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[(dayNum - 1) % 7];
-};
-// Get weather based on day number (simplified random but consistent weather per day)
-const getWeather = (dayNum) => {
-  const weathers = [
-    { icon: '☀️', temp: '78°F', desc: 'Sunny' },
-    { icon: '⛅', temp: '72°F', desc: 'Partly Cloudy' },
-    { icon: '☁️', temp: '68°F', desc: 'Cloudy' },
-    { icon: '🌧️', temp: '65°F', desc: 'Rainy' },
-    { icon: '⛈️', temp: '63°F', desc: 'Stormy' },
-    { icon: '🌫️', temp: '69°F', desc: 'Foggy' },
-    { icon: '🌤️', temp: '75°F', desc: 'Mostly Sunny' }
-  ];
-  const weatherIndex = (dayNum * 3) % weathers.length;
-  return weathers[weatherIndex];
-};
-const currentWeather = getWeather(day);
-const getFormattedDate = (dayNum) => {
-  const startDate = new Date(2024, 0, 1); // Assuming the expedition starts on January 1, 2024
-  const currentDate = new Date(startDate.getTime() + (dayNum - 1) * 24 * 60 * 60 * 1000);
-  return currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-};
-return (
-    <div style={gameStyles}>
-      <header style={headerStyles}>
-        <div style={headerInfoStyles}>
-          <button 
-            style={menuToggleStyles}
-            onClick={() => setSidebarOpen(true)}
-          >
-            ☰ Menu
-          </button>
-          <div style={dayBadgeStyles}>Day {day}</div>
-          <div>
-            {getDayOfWeek(day)}<br />
-            {getFormattedDate(day)}
+
+  const gameOverButtonStyles = {
+    ...gameTheme.common.button,
+    marginTop: '20px',
+  };
+
+  const getFormattedDate = (dayNum) => {
+    const startDate = new Date(2024, 0, 1);
+    const currentDate = new Date(startDate.getTime() + (dayNum - 1) * 24 * 60 * 60 * 1000);
+    return currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
+  const currentWeather = {
+    icon: '🌧️',
+    desc: 'Rainy',
+    temp: '65°F'
+  };
+
+  const renderPhaseContent = () => {
+    switch (phase) {
+      case GAME_PHASES.PLANNING:
+        return <PlanningPhase />;
+      case GAME_PHASES.PREPARATION:
+        return <Kitchen />;
+      case GAME_PHASES.SERVING:
+        return <MealAssignmentTable />;
+      case GAME_PHASES.END_OF_DAY:
+        return <Status />;
+      default:
+        return null;
+    }
+  };
+
+  const nextPhaseButtonStyles = {
+    ...gameTheme.common.button,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '12px 24px',
+    backgroundColor: gameTheme.colors.highlightPrimary,
+    color: gameTheme.colors.background,
+    fontWeight: 'bold',
+    marginLeft: 'auto',
+  };
+
+  const phaseInfoStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    color: gameTheme.colors.text,
+    fontSize: '14px',
+  };
+
+  const handleNextPhase = () => {
+    if (phase === GAME_PHASES.END_OF_DAY) {
+      advanceDay();
+    } else {
+      advancePhase();
+    }
+  };
+
+  const getPhaseText = () => {
+    switch (phase) {
+      case GAME_PHASES.PLANNING:
+        return 'Start Cooking →';
+      case GAME_PHASES.PREPARATION:
+        return 'Serve Meals →';
+      case GAME_PHASES.SERVING:
+        return 'End Day →';
+      case GAME_PHASES.END_OF_DAY:
+        return 'Next Day →';
+      default:
+        return 'Next Phase →';
+    }
+  };
+
+  const getCurrentPhaseName = () => {
+    switch (phase) {
+      case GAME_PHASES.PLANNING:
+        return 'Planning Phase';
+      case GAME_PHASES.PREPARATION:
+        return 'Kitchen Phase';
+      case GAME_PHASES.SERVING:
+        return 'Serving Phase';
+      case GAME_PHASES.END_OF_DAY:
+        return 'End of Day';
+      default:
+        return 'Unknown Phase';
+    }
+  };
+
+  return (
+    <GameProvider>
+      <div style={gameStyles.container}>
+        <header style={headerStyles}>
+          <div style={headerInfoStyles}>
+            <div style={dayBadgeStyles}>Day {day}</div>
+            <div>{getFormattedDate(day)}</div>
           </div>
-        </div>
-        <div style={phaseIndicatorStyles}>
-          {[1, 2, 3, 4].map((phase) => (
-            <div
-              key={phase}
-              style={{
-                ...phaseStepStyles,
-                backgroundColor: gamePhase === phase ? '#4caf50' : 'transparent'
-              }}
-            >
-              {phase}
+          <div style={phaseIndicatorStyles}>
+            {[1, 2, 3, 4].map((phaseNum) => (
+              <div
+                key={phaseNum}
+                style={{
+                  ...phaseStepStyles,
+                  backgroundColor: phase === phaseNum - 1 ? gameTheme.colors.highlightPrimary : 'transparent',
+                  color: phase === phaseNum - 1 ? gameTheme.colors.background : gameTheme.colors.text,
+                }}
+              >
+                {phaseNum}
+              </div>
+            ))}
+          </div>
+          <div style={weatherDisplayStyles}>
+            <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
+            <div>
+              <div>{currentWeather.desc}</div>
+              <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
             </div>
-          ))}
-        </div>
-        <div style={weatherDisplayStyles}>
-          <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
-          <div>
-            <div>{currentWeather.desc}</div>
-            <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
           </div>
-        </div>
-      </header>
-      
-      <main style={mainStyles}>
-        {gamePhase === 2 && <Kitchen />}
-        {gamePhase === 3 && <Status />}
-        {(gamePhase === 1 || gamePhase === 4) && <Status />}
-      </main>
-      
-      {gameState === GAME_STATE.VICTORY && (
-        <div style={gameOverStyles}>
-          <h2>Victory!</h2>
-          <p>You've successfully completed the expedition!</p>
-          <p>Your cooking skills kept the crew well-fed and motivated.</p>
-          <p>It took you {day} days to reach your destination.</p>
-          <button onClick={resetGame} style={gameOverButtonStyles}>
-            Play Again
-          </button>
-        </div>
-      )}
-      
-      {gameState === GAME_STATE.DEFEAT && (
-        <div style={gameOverStyles}>
-          <h2>Expedition Failed</h2>
-          <p>All your crew members are starving!</p>
-          <p>The expedition has been abandoned on day {day}.</p>
-          <p>Progress made: {Math.floor(progress)}%</p>
-          <button onClick={resetGame} style={gameOverButtonStyles}>
-            Try Again
-          </button>
-        </div>
-      )}
-      
-      <ScenarioModal />
-      <MenuButton />
-    </div>
+        </header>
+        
+        <main style={mainStyles}>
+          {renderPhaseContent()}
+        </main>
+        
+        {state === GAME_STATES.PLAYING && (
+          <footer style={footerStyles}>
+            <div style={phaseInfoStyles}>
+              <span>Current Phase:</span>
+              <strong>{getCurrentPhaseName()}</strong>
+            </div>
+            <button 
+              onClick={handleNextPhase}
+              style={nextPhaseButtonStyles}
+            >
+              {getPhaseText()}
+            </button>
+          </footer>
+        )}
+        
+        {state === GAME_STATES.VICTORY && (
+          <div style={gameOverStyles}>
+            <h2>Victory!</h2>
+            <p>You've successfully completed the expedition!</p>
+            <p>Your cooking skills kept the crew well-fed and motivated.</p>
+            <p>It took you {gameState.day} days to reach your destination.</p>
+            <button onClick={resetGame} style={gameOverButtonStyles}>
+              Play Again
+            </button>
+          </div>
+        )}
+        
+        {state === GAME_STATES.DEFEAT && (
+          <div style={gameOverStyles}>
+            <h2>Expedition Failed</h2>
+            <p>All your crew members are starving!</p>
+            <p>The expedition has been abandoned on day {gameState.day}.</p>
+            <p>Progress made: {Math.floor(gameState.progress)}%</p>
+            <button onClick={resetGame} style={gameOverButtonStyles}>
+              Try Again
+            </button>
+          </div>
+        )}
+        
+        <ScenarioModal />
+      </div>
+    </GameProvider>
   );
 };
 

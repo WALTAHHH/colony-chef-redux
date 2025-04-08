@@ -1,199 +1,396 @@
 import React from 'react';
-import { useGameState } from '../contexts/GameContext';
+import { useGame } from '../context/GameContext';
+import { GAME_PHASES } from '../data/gameConstants';
 import CrewStatus from './crewStatus';
 import ExpeditionMap from './ExpeditionMap';
 import ScenarioHistory from './ScenarioHistory';
 import MealAssignmentTable from './MealAssignmentTable';
+import { gameTheme } from '../theme/gameTheme';
 
 const Status = () => {
-  const { 
-    gamePhase,
-    day,
-    progressToNext,
-    setGamePhase
-  } = useGameState();
-  
-  const statusStyles = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px',
-    backgroundColor: '#f5f5f5',
-    borderRadius: '4px',
-    marginBottom: '10px'
+  const { gameState } = useGame();
+  const { phase, day, progress, morale, crew, assignedMeals, inventory } = gameState;
+
+  const caravanIconStyles = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    left: `calc(${progress}% - 12px)`,
+    fontSize: '20px',
   };
-  
-  const sectionStyles = {
-    backgroundColor: '#efebe9',
-    padding: '15px',
-    borderRadius: '8px',
-    marginBottom: '15px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  };
-  
-  const progressBarContainerStyles = {
-    width: '100%',
-    height: '20px',
-    backgroundColor: '#e0e0e0',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    marginTop: '5px'
-  };
-  
-  const progressBarStyles = {
-    height: '100%',
-    backgroundColor: '#2196f3',
-    width: `${progressToNext}%`,
-    transition: 'width 0.5s'
-  };
-  
-  const buttonStyles = {
-    backgroundColor: '#8d6e63',
-    color: 'white',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    marginRight: '8px'
-  };
-  
-  const disabledButtonStyles = {
-    ...buttonStyles,
-    backgroundColor: '#d7ccc8',
-    cursor: 'not-allowed'
-  };
-  
-  const getPhaseDescription = () => {
-    switch(gamePhase) {
-      case 1: return "Planning Phase - Review your crew and plan for the day";
-      case 2: return "Preparation Phase - Gather ingredients and prepare meals";
-      case 3: return "Serving Phase - Feed your crew";
-      case 4: return "End of Day - Review results and prepare for tomorrow";
-      default: return "";
-    }
-  };
-  
-  return (
-    <div style={statusStyles}>
-      {gamePhase !== 3 && (
-        <>
-          <div style={sectionStyles}>
-            <h2>Expedition Status</h2>
-            <div>
-              <h3>Day {day} - {getPhaseDescription()}</h3>
-              <div style={progressBarContainerStyles}>
-                <div style={progressBarStyles}></div>
-              </div>
-              <p>{Math.floor(progressToNext)}% complete</p>
-            </div>
+
+  const renderExpeditionProgress = () => (
+    <div style={sectionStyles}>
+      <h3 style={sectionTitleStyles}>Expedition Progress</h3>
+      <div style={progressContainerStyles}>
+        <div style={progressMapStyles}>
+          <div style={progressBarContainerStyles}>
+            <div style={progressTrackStyles} />
+            <div 
+              style={{
+                ...progressFillStyles,
+                width: `${progress}%`
+              }}
+            />
+            <div style={caravanIconStyles}>🚃</div>
           </div>
-          
-          <ExpeditionMap />
-        </>
-      )}
-      
-      <ScenarioHistory />
-      
-      {(gamePhase === 3 || gamePhase === 4) && (
-        <div style={{
-          backgroundColor: '#ffecb3',
-          borderRadius: '8px',
-          padding: '20px',
-          marginBottom: '20px',
-          boxShadow: '0 6px 12px rgba(0,0,0,0.15)',
-          border: '1px solid #e6c35a'
-        }}>
-          <h2 style={{ color: '#5d4037', marginTop: 0, marginBottom: '15px', borderBottom: '2px solid #e6c35a', paddingBottom: '10px' }}>
-            {gamePhase === 3 ? 'Meal Assignment' : 'Meal Assignment Results'}
-          </h2>
-          {gamePhase === 3 && (
-            <p style={{ fontSize: '16px', color: '#5d4037', marginBottom: '20px', backgroundColor: 'rgba(255, 255, 255, 0.5)', padding: '10px', borderRadius: '5px' }}>
-              Assign meals to your crew members to satisfy their hunger and maintain morale.
-            </p>
-          )}
-          <MealAssignmentTable />
+          <div style={milestoneStyles}>
+            <span>Start</span>
+            <span>Mountain Pass</span>
+            <span>River Cross</span>
+            <span>Colony</span>
+          </div>
         </div>
-      )}
-      
-      {gamePhase !== 1 && gamePhase !== 3 && gamePhase !== 4 && <CrewStatus />}
-      <div style={{ marginTop: 'auto' }}>
-        {gamePhase === 3 && (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              style={{
-                ...buttonStyles,
-                backgroundColor: '#795548',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '12px 15px'
-              }} 
-              onClick={() => setGamePhase(2)}
-              title="Go back to preparation phase"
-            >
-              <span style={{ fontSize: '20px', marginRight: '5px' }}>←</span> Back
-            </button>
-            <button 
-              style={progressToNext > 0 ? {...buttonStyles, flex: 1} : {...disabledButtonStyles, flex: 1}}
-              onClick={() => setGamePhase(3)}
-              disabled={progressToNext === 0}
-            >
-              Complete Meal Service
-            </button>
+        <div style={progressStatsStyles}>
+          <div style={statBoxStyles}>
+            <span style={statLabelStyles}>Distance Covered</span>
+            <span style={statValueStyles}>{Math.floor(progress)}%</span>
           </div>
-        )}
-        
-        {gamePhase === 4 && (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              style={{
-                ...buttonStyles,
-                backgroundColor: '#795548',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '12px 15px'
-              }} 
-              onClick={() => setGamePhase(3)}
-              title="Go back to serving phase"
-            >
-              <span style={{ fontSize: '20px', marginRight: '5px' }}>←</span> Back
-            </button>
-            <button style={{...buttonStyles, flex: 1}} onClick={() => setGamePhase(4)}>
-              Start Next Day
-            </button>
+          <div style={statBoxStyles}>
+            <span style={statLabelStyles}>Days Traveled</span>
+            <span style={statValueStyles}>{day}</span>
           </div>
-        )}
-        
-        {(gamePhase === 1 || gamePhase === 2) && (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {gamePhase !== 1 && (
-              <button 
+          <div style={statBoxStyles}>
+            <span style={statLabelStyles}>Colony Morale</span>
+            <div style={moraleBarStyles}>
+              <div 
                 style={{
-                  ...buttonStyles,
-                  backgroundColor: '#795548',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '12px 15px'
-                }} 
-                onClick={() => setGamePhase(prev => Math.max(1, prev - 1))}
-                title="Go back to previous phase"
-              >
-                <span style={{ fontSize: '20px', marginRight: '5px' }}>←</span> Back
-              </button>
-            )}
-            <button 
-              style={{ ...buttonStyles, flex: 1 }} 
-              onClick={() => setGamePhase(prev => Math.min(4, prev + 1))}
-            >
-              {gamePhase === 1 ? "Prepare Meals" : "Serve Food"}
-            </button>
+                  ...moraleFillStyles,
+                  width: `${morale}%`,
+                  backgroundColor: morale > 70 
+                    ? gameTheme.colors.success 
+                    : morale > 40 
+                      ? gameTheme.colors.warning 
+                      : gameTheme.colors.danger
+                }}
+              />
+            </div>
+            <span style={statValueStyles}>{Math.floor(morale)}%</span>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
+
+  const renderCrewStatus = () => (
+    <div style={sectionStyles}>
+      <h3 style={sectionTitleStyles}>Crew Status</h3>
+      <div style={crewGridStyles}>
+        {crew.map(member => (
+          <div key={member.id} style={crewCardStyles}>
+            <div style={crewHeaderStyles}>
+              <span style={crewAvatarStyles}>{member.avatar}</span>
+              <div style={crewNameStyles}>
+                <div>{member.name}</div>
+                <div style={crewRoleStyles}>{member.role}</div>
+              </div>
+            </div>
+            <div style={crewStatsStyles}>
+              <div style={crewStatStyles}>
+                <span>Hunger</span>
+                <div style={statBarContainerStyles}>
+                  <div 
+                    style={{
+                      ...statBarFillStyles,
+                      width: `${member.hunger}%`,
+                      backgroundColor: member.hunger > 70 
+                        ? gameTheme.colors.success 
+                        : member.hunger > 30 
+                          ? gameTheme.colors.warning 
+                          : gameTheme.colors.danger
+                    }}
+                  />
+                </div>
+                <span>{member.hunger}%</span>
+              </div>
+              <div style={crewStatStyles}>
+                <span>Morale</span>
+                <div style={statBarContainerStyles}>
+                  <div 
+                    style={{
+                      ...statBarFillStyles,
+                      width: `${member.morale}%`,
+                      backgroundColor: gameTheme.colors.highlightPrimary
+                    }}
+                  />
+                </div>
+                <span>{member.morale}%</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDaySummary = () => (
+    <div style={sectionStyles}>
+      <h3 style={sectionTitleStyles}>Day Summary</h3>
+      <div style={summaryContainerStyles}>
+        <div style={summaryColumnStyles}>
+          <h4 style={summarySubtitleStyles}>Resources</h4>
+          <div style={resourceListStyles}>
+            {Object.entries(inventory).map(([item, quantity]) => (
+              <div key={item} style={resourceItemStyles}>
+                <span>{item}</span>
+                <span>x{quantity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={summaryColumnStyles}>
+          <h4 style={summarySubtitleStyles}>Events</h4>
+          <div style={eventListStyles}>
+            <div style={eventItemStyles}>
+              <span style={eventIconStyles}>🌧️</span>
+              <span>Rainy weather slowed progress</span>
+            </div>
+            <div style={eventItemStyles}>
+              <span style={eventIconStyles}>🍖</span>
+              <span>All crew members were fed</span>
+            </div>
+            <div style={eventItemStyles}>
+              <span style={eventIconStyles}>⭐</span>
+              <span>High morale bonus achieved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={containerStyles}>
+      {renderExpeditionProgress()}
+      {renderCrewStatus()}
+      {renderDaySummary()}
+    </div>
+  );
+};
+
+const containerStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '24px',
+  padding: '20px',
+  height: '100%',
+  overflow: 'auto',
+  ...gameTheme.common.pixelated,
+};
+
+const sectionStyles = {
+  backgroundColor: gameTheme.colors.panel,
+  border: `2px solid ${gameTheme.colors.border}`,
+  padding: '20px',
+  ...gameTheme.common.panel,
+};
+
+const sectionTitleStyles = {
+  fontSize: '24px',
+  fontWeight: 'bold',
+  color: gameTheme.colors.highlightPrimary,
+  margin: '0 0 20px 0',
+  textTransform: 'uppercase',
+  textAlign: 'center',
+  borderBottom: `2px solid ${gameTheme.colors.border}`,
+  paddingBottom: '10px',
+};
+
+const progressContainerStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '20px',
+};
+
+const progressMapStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const progressBarContainerStyles = {
+  height: '24px',
+  backgroundColor: gameTheme.colors.background,
+  border: `2px solid ${gameTheme.colors.border}`,
+  position: 'relative',
+};
+
+const progressTrackStyles = {
+  position: 'absolute',
+  top: '50%',
+  left: '0',
+  right: '0',
+  height: '2px',
+  backgroundColor: gameTheme.colors.border,
+  transform: 'translateY(-50%)',
+};
+
+const progressFillStyles = {
+  height: '100%',
+  backgroundColor: gameTheme.colors.highlightPrimary,
+  transition: 'width 0.3s ease',
+};
+
+const milestoneStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: '12px',
+  color: gameTheme.colors.textDim,
+};
+
+const progressStatsStyles = {
+  display: 'flex',
+  gap: '20px',
+  justifyContent: 'center',
+};
+
+const statBoxStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '12px',
+  backgroundColor: gameTheme.colors.background,
+  border: `2px solid ${gameTheme.colors.border}`,
+  minWidth: '120px',
+};
+
+const crewGridStyles = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+  gap: '16px',
+};
+
+const crewCardStyles = {
+  backgroundColor: gameTheme.colors.background,
+  border: `2px solid ${gameTheme.colors.border}`,
+  padding: '16px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+};
+
+const crewHeaderStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+};
+
+const crewAvatarStyles = {
+  fontSize: '32px',
+};
+
+const crewNameStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+};
+
+const crewRoleStyles = {
+  fontSize: '12px',
+  color: gameTheme.colors.textDim,
+};
+
+const crewStatsStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const crewStatStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '14px',
+};
+
+const statBarContainerStyles = {
+  flex: 1,
+  height: '8px',
+  backgroundColor: gameTheme.colors.background,
+  border: `1px solid ${gameTheme.colors.border}`,
+};
+
+const statBarFillStyles = {
+  height: '100%',
+  transition: 'width 0.3s ease',
+};
+
+const summaryContainerStyles = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '20px',
+};
+
+const summaryColumnStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+};
+
+const summarySubtitleStyles = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  color: gameTheme.colors.text,
+  margin: '0',
+  padding: '8px 0',
+  borderBottom: `1px solid ${gameTheme.colors.border}`,
+};
+
+const resourceListStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const resourceItemStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  padding: '8px',
+  backgroundColor: gameTheme.colors.background,
+  border: `1px solid ${gameTheme.colors.border}`,
+};
+
+const eventListStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
+const eventItemStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '8px',
+  backgroundColor: gameTheme.colors.background,
+  border: `1px solid ${gameTheme.colors.border}`,
+};
+
+const eventIconStyles = {
+  fontSize: '20px',
+};
+
+const moraleBarStyles = {
+  height: '8px',
+  backgroundColor: gameTheme.colors.background,
+  border: `1px solid ${gameTheme.colors.border}`,
+};
+
+const moraleFillStyles = {
+  height: '100%',
+  transition: 'width 0.3s ease',
+};
+
+const statLabelStyles = {
+  fontSize: '14px',
+  color: gameTheme.colors.textDim,
+  textTransform: 'uppercase',
+};
+
+const statValueStyles = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  color: gameTheme.colors.text,
 };
 
 export default Status;

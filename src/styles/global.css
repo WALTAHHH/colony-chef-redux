@@ -1,0 +1,43 @@
+/* Import pixel font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Custom scrollbar for the retro feel */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #392b1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a67c52;
+  border: 2px solid #5c4433;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c6a664;
+}
+
+/* Ensure all images are pixelated */
+img, canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+} 

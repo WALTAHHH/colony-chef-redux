@@ -1,102 +1,140 @@
 import React from 'react';
-import { useGameState } from '../contexts/GameContext';
+import { useGame } from '../context/GameContext';
+import { SCENARIO } from '../data/gameConstants';
 
 const ScenarioHistory = () => {
-  const { scenarioHistory } = useGameState();
-  
-  const historyContainerStyles = {
-    backgroundColor: '#efebe9',
-    borderRadius: '8px',
-    marginBottom: '15px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    overflow: 'auto'
+  const { gameState } = useGame();
+  const { scenarios } = gameState;
+
+  const getScenarioColor = (type) => {
+    switch (type) {
+      case 'positive':
+        return '#4CAF50';
+      case 'negative':
+        return '#F44336';
+      default:
+        return '#2196F3';
+    }
   };
-  
-  if (!scenarioHistory || scenarioHistory.length === 0) {
-    return (
-      <div style={historyContainerStyles}>
-        <h2>Journey Log</h2>
-        <p style={{ color: '#777', fontStyle: 'italic' }}>
-          Your journey has just begun. Decisions you make will appear here.
-        </p>
-      </div>
-    );
-  }
-  
-  const eventStyles = {
-    borderLeft: '3px solid #8d6e63',
-    padding: '10px 15px',
-    margin: '10px 0',
-    backgroundColor: '#fff',
-    borderRadius: '0 5px 5px 0',
-    position: 'relative'
-  };
-  
-  const dayLabelStyles = {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    padding: '3px 8px',
-    backgroundColor: '#5d4037',
-    color: 'white',
-    borderRadius: '4px',
-    fontSize: '12px'
-  };
-  
-  const choiceStyles = {
-    backgroundColor: '#f5f5f5',
-    padding: '10px',
-    marginTop: '8px',
-    borderRadius: '5px'
-  };
-  
-  const locationStyles = {
-    color: '#8d6e63',
-    fontWeight: 'bold',
-    marginBottom: '5px'
-  };
-  
-  const getEventIcon = (scenarioId) => {
-    const iconMap = {
-      'dense_forest': '🌲',
-      'mountain_pass': '⛰️',
-      'river_crossing': '🌊',
-      'ancient_ruins': '🏛️',
-      'hunting_opportunity': '🏹',
-      'wild_berries': '🍒',
-      'bad_weather': '🌧️'
-    };
-    
-    return iconMap[scenarioId] || '📜';
-  };
-  
+
   return (
-    <div style={historyContainerStyles}>
-      <h2>Journey Log</h2>
-      
-      {scenarioHistory.map((event, index) => (
-        <div key={index} style={eventStyles}>
-          <div style={dayLabelStyles}>Day {event.day}</div>
-          
-          <div style={locationStyles}>
-            {getEventIcon(event.scenario.id)} {event.location}
+    <div style={containerStyles}>
+      <h3 style={titleStyles}>Scenario History</h3>
+      <div style={scenariosStyles}>
+        {scenarios.map((scenario, index) => (
+          <div
+            key={index}
+            style={{
+              ...scenarioStyles,
+              borderLeft: `4px solid ${getScenarioColor(scenario.type)}`
+            }}
+          >
+            <div style={scenarioHeaderStyles}>
+              <div style={scenarioTitleStyles}>{scenario.title}</div>
+              <div style={scenarioDateStyles}>Day {scenario.day}</div>
+            </div>
+            <div style={scenarioDescriptionStyles}>
+              {scenario.description}
+            </div>
+            {scenario.effects && (
+              <div style={effectsStyles}>
+                {Object.entries(scenario.effects).map(([effect, value]) => (
+                  <div key={effect} style={effectStyles}>
+                    <span style={effectLabelStyles}>{effect}:</span>
+                    <span
+                      style={{
+                        ...effectValueStyles,
+                        color: value > 0 ? '#4CAF50' : '#F44336'
+                      }}
+                    >
+                      {value > 0 ? `+${value}` : value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <p><strong>{event.scenario.title}</strong></p>
-          <p>{event.scenario.description}</p>
-          
-          <div style={choiceStyles}>
-            <p>
-              <strong>Your choice:</strong> {event.scenario.choices[event.choiceIndex].text}
-            </p>
-            <p>
-              <strong>Outcome:</strong> {event.scenario.choices[event.choiceIndex].outcome.description}
-            </p>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
+};
+
+const containerStyles = {
+  padding: '20px',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  marginTop: '20px'
+};
+
+const titleStyles = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  margin: '0 0 15px 0',
+  color: '#333'
+};
+
+const scenariosStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '15px'
+};
+
+const scenarioStyles = {
+  padding: '15px',
+  backgroundColor: '#f9f9f9',
+  borderRadius: '4px',
+  transition: 'transform 0.2s',
+  ':hover': {
+    transform: 'translateX(5px)'
+  }
+};
+
+const scenarioHeaderStyles = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '10px'
+};
+
+const scenarioTitleStyles = {
+  fontSize: '16px',
+  fontWeight: 'bold',
+  color: '#333'
+};
+
+const scenarioDateStyles = {
+  fontSize: '14px',
+  color: '#666'
+};
+
+const scenarioDescriptionStyles = {
+  fontSize: '14px',
+  color: '#666',
+  marginBottom: '10px'
+};
+
+const effectsStyles = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px'
+};
+
+const effectStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '5px'
+};
+
+const effectLabelStyles = {
+  fontSize: '14px',
+  color: '#666'
+};
+
+const effectValueStyles = {
+  fontSize: '14px',
+  fontWeight: 'bold'
 };
 
 export default ScenarioHistory;

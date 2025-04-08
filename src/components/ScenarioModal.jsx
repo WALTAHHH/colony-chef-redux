@@ -1,11 +1,11 @@
 import React from 'react';
-import { useGameState } from '../contexts/GameContext';
+import { useGame } from '../context/GameContext';
 
 const ScenarioModal = ({ scenario, onClose }) => {
   const { 
     getScenarioIcon,
     handleScenarioChoice
-  } = useGameState();
+  } = useGame();
 
   // eslint-disable-next-line no-unused-vars
   const modalStyles = {

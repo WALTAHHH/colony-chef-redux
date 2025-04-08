@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameProvider } from './contexts/GameContext';
+import { GameProvider } from './context/GameContext';
 import Game from './components/Game';
 
 function App() {
