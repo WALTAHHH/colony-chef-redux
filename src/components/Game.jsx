@@ -7,6 +7,7 @@ import { GAME_STATES, GAME_PHASES } from '../data/gameConstants';
 import { useGame } from '../context/GameContext';
 import ScenarioModal from './ScenarioModal';
 import PlanningPhase from './PlanningPhase';
+import ActionPointsBar from './ActionPointsBar';
 import { gameTheme } from '../theme/gameTheme';
 
 const Game = () => {
@@ -156,7 +157,7 @@ const Game = () => {
     switch (phase) {
       case GAME_PHASES.PLANNING:
         return <PlanningPhase />;
-      case GAME_PHASES.PREPARATION:
+      case GAME_PHASES.ACTION:
         return <Kitchen />;
       case GAME_PHASES.SERVING:
         return <MealAssignmentTable />;
@@ -199,7 +200,7 @@ const Game = () => {
     switch (phase) {
       case GAME_PHASES.PLANNING:
         return 'Start Cooking →';
-      case GAME_PHASES.PREPARATION:
+      case GAME_PHASES.ACTION:
         return 'Serve Meals →';
       case GAME_PHASES.SERVING:
         return 'End Day →';
@@ -214,8 +215,8 @@ const Game = () => {
     switch (phase) {
       case GAME_PHASES.PLANNING:
         return 'Planning Phase';
-      case GAME_PHASES.PREPARATION:
-        return 'Kitchen Phase';
+      case GAME_PHASES.ACTION:
+        return 'Action Phase';
       case GAME_PHASES.SERVING:
         return 'Serving Phase';
       case GAME_PHASES.END_OF_DAY:
@@ -247,11 +248,14 @@ const Game = () => {
               </div>
             ))}
           </div>
-          <div style={weatherDisplayStyles}>
-            <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
-            <div>
-              <div>{currentWeather.desc}</div>
-              <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <ActionPointsBar />
+            <div style={weatherDisplayStyles}>
+              <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
+              <div>
+                <div>{currentWeather.desc}</div>
+                <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
+              </div>
             </div>
           </div>
         </header>

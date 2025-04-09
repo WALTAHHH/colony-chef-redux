@@ -4,21 +4,22 @@ import { recipes } from '../data/recipeData';
 import { ingredients } from '../data/ingredientData';
 import InventoryGrid from './InventoryGrid';
 import IngredientDetails from './IngredientDetails';
-import MealAssignmentTable from './MealAssignmentTable';
+import PreparationQueue from './PreparationQueue';
 import { gameTheme } from '../theme/gameTheme';
 
-// Pixel art icons for tabs (16x16 unicode characters that look pixelated)
-const ICONS = {
-  inventory: '🎒',
-  recipes: '📜',
-  cooked: '🍲',
+// Update the ICONS object to include labels
+const TABS = {
+  inventory: { icon: '🎒', label: 'Inventory' },
+  recipes: { icon: '📜', label: 'Recipes' },
+  cooked: { icon: '🍲', label: 'Cooked' },
 };
 
 const Kitchen = () => {
-  const { gameState, cookMeal } = useGame();
+  const { gameState, addToMealQueue } = useGame();
   const { inventory, cookedMeals } = gameState;
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [activeTab, setActiveTab] = useState('inventory');
+  const [warningMessage, setWarningMessage] = useState(null);
   const { 
     gamePhase,
     meals, 
@@ -31,134 +32,143 @@ const Kitchen = () => {
   } = gameState;
   
   const handleCook = (recipeId) => {
-    if (cookMeal(recipeId)) {
-      setSelectedRecipe(null);
+    const recipe = recipes[recipeId];
+    if (!recipe) return;
+
+    // Calculate ingredients already allocated in queue
+    const allocatedIngredients = gameState.mealQueue.reduce((acc, meal) => {
+      const mealRecipe = recipes[meal.recipeId];
+      Object.entries(mealRecipe.ingredients).forEach(([ingredient, quantity]) => {
+        acc[ingredient] = (acc[ingredient] || 0) + quantity;
+      });
+      return acc;
+    }, {});
+
+    // Check if we have enough available ingredients
+    const hasEnoughIngredients = Object.entries(recipe.ingredients).every(([ingredient, quantity]) => {
+      const currentAmount = gameState.inventory[ingredient] || 0;
+      const allocated = allocatedIngredients[ingredient] || 0;
+      const available = currentAmount - allocated;
+      return available >= quantity;
+    });
+
+    if (hasEnoughIngredients) {
+      addToMealQueue(recipeId);
+      setWarningMessage(null);
+    } else {
+      setWarningMessage("Not enough ingredients available!");
+      // Clear warning after 3 seconds
+      setTimeout(() => setWarningMessage(null), 3000);
     }
+  };
+
+  const containerStyles = {
+    display: 'flex',
+    gap: '20px',
+    height: '100%',
+  };
+
+  const mainPanelStyles = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  };
+
+  const queuePanelStyles = {
+    width: '300px',
+    display: 'flex',
+    flexDirection: 'column',
   };
 
   const kitchenStyles = {
     container: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px',
       height: '100%',
-      ...gameTheme.common.panel,
       position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: '8px',
-        left: '8px',
-        right: '8px',
-        bottom: '8px',
-        border: `2px dashed ${gameTheme.colors.border}`,
-        opacity: 0.5,
-        pointerEvents: 'none'
-      }
+      backgroundColor: gameTheme.colors.panel,
+      ...gameTheme.common.panel,
+      overflow: 'hidden',
     },
     tabs: {
       display: 'flex',
-      gap: '10px',
-      borderBottom: `2px solid ${gameTheme.colors.border}`,
-      paddingBottom: '10px',
+      gap: '4px',
+      padding: '0 20px',
       position: 'relative',
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: '-2px',
-        left: '0',
-        right: '0',
-        height: '2px',
-        background: `repeating-linear-gradient(
-          to right,
-          ${gameTheme.colors.border} 0,
-          ${gameTheme.colors.border} 4px,
-          transparent 4px,
-          transparent 8px
-        )`,
-      }
+      backgroundColor: gameTheme.colors.background,
+      marginBottom: '-2px',
     },
     content: {
       flex: 1,
-      minHeight: '300px',
-      overflowY: 'auto',
+      padding: '20px',
+      backgroundColor: gameTheme.colors.panel,
+      borderTop: `2px solid ${gameTheme.colors.border}`,
+      overflow: 'auto',
       position: 'relative',
-      padding: '4px',
-      '&::-webkit-scrollbar': {
-        width: '12px',
-      },
-      '&::-webkit-scrollbar-track': {
-        background: gameTheme.colors.background,
-        border: `2px solid ${gameTheme.colors.border}`,
-      },
-      '&::-webkit-scrollbar-thumb': {
-        background: gameTheme.colors.border,
-        border: `2px solid ${gameTheme.colors.background}`,
-        '&:hover': {
-          background: gameTheme.colors.highlightPrimary,
-        }
-      }
-    },
-    details: {
-      marginTop: '20px',
-      ...gameTheme.common.panel,
+      zIndex: 1,
     },
     cornerDecoration: {
       position: 'absolute',
-      width: '16px',
-      height: '16px',
-      pointerEvents: 'none',
+      width: '20px',
+      height: '20px',
+      border: `2px solid ${gameTheme.colors.border}`,
       '&.top-left': {
-        top: '4px',
-        left: '4px',
-        borderTop: `2px solid ${gameTheme.colors.border}`,
-        borderLeft: `2px solid ${gameTheme.colors.border}`,
+        top: '10px',
+        left: '10px',
+        borderRight: 'none',
+        borderBottom: 'none',
       },
       '&.top-right': {
-        top: '4px',
-        right: '4px',
-        borderTop: `2px solid ${gameTheme.colors.border}`,
-        borderRight: `2px solid ${gameTheme.colors.border}`,
+        top: '10px',
+        right: '10px',
+        borderLeft: 'none',
+        borderBottom: 'none',
       },
       '&.bottom-left': {
-        bottom: '4px',
-        left: '4px',
-        borderBottom: `2px solid ${gameTheme.colors.border}`,
-        borderLeft: `2px solid ${gameTheme.colors.border}`,
+        bottom: '10px',
+        left: '10px',
+        borderRight: 'none',
+        borderTop: 'none',
       },
       '&.bottom-right': {
-        bottom: '4px',
-        right: '4px',
-        borderBottom: `2px solid ${gameTheme.colors.border}`,
-        borderRight: `2px solid ${gameTheme.colors.border}`,
-      }
-    }
+        bottom: '10px',
+        right: '10px',
+        borderLeft: 'none',
+        borderTop: 'none',
+      },
+    },
   };
 
-  const tabStyles = (isActive) => ({
-    ...gameTheme.common.button,
-    backgroundColor: isActive ? gameTheme.colors.highlightPrimary : gameTheme.colors.panel,
-    color: isActive ? gameTheme.colors.background : gameTheme.colors.text,
-    padding: '8px 16px',
-    fontSize: '12px',
-    border: `2px solid ${isActive ? gameTheme.colors.highlightPrimary : gameTheme.colors.border}`,
+  const tabStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    padding: '8px 16px',
+    border: `2px solid ${gameTheme.colors.border}`,
+    borderBottom: 'none',
+    borderTopLeftRadius: '8px',
+    borderTopRightRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
     position: 'relative',
-    '&::before': isActive ? {
-      content: '""',
-      position: 'absolute',
-      bottom: '-12px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '0',
-      height: '0',
-      borderLeft: '6px solid transparent',
-      borderRight: '6px solid transparent',
-      borderTop: `6px solid ${gameTheme.colors.highlightPrimary}`,
-    } : {},
-  });
+    backgroundColor: gameTheme.colors.panel,
+    color: gameTheme.colors.text,
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      backgroundColor: gameTheme.colors.highlightPrimary,
+      color: gameTheme.colors.background,
+    },
+  };
+
+  const activeTabStyles = {
+    ...tabStyles,
+    backgroundColor: gameTheme.colors.highlightPrimary,
+    color: gameTheme.colors.background,
+    borderColor: gameTheme.colors.highlightPrimary,
+    zIndex: 2,
+  };
 
   const recipesStyles = {
     container: {
@@ -349,42 +359,60 @@ const Kitchen = () => {
   };
   
   return (
-    <div style={kitchenStyles.container}>
-      <div style={kitchenStyles.cornerDecoration} className="top-left" />
-      <div style={kitchenStyles.cornerDecoration} className="top-right" />
-      <div style={kitchenStyles.cornerDecoration} className="bottom-left" />
-      <div style={kitchenStyles.cornerDecoration} className="bottom-right" />
-      
-      <div style={kitchenStyles.tabs}>
-        <button 
-          style={tabStyles(activeTab === 'inventory')}
-          onClick={() => setActiveTab('inventory')}
-        >
-          {ICONS.inventory} Inventory
-        </button>
-        <button 
-          style={tabStyles(activeTab === 'recipes')}
-          onClick={() => setActiveTab('recipes')}
-        >
-          {ICONS.recipes} Recipes
-        </button>
-        <button
-          style={tabStyles(activeTab === 'cooked')}
-          onClick={() => setActiveTab('cooked')}
-        >
-          {ICONS.cooked} Cooked Meals
-        </button>
+    <div style={containerStyles}>
+      <div style={mainPanelStyles}>
+        <div style={kitchenStyles.container}>
+          <div style={kitchenStyles.cornerDecoration} className="top-left" />
+          <div style={kitchenStyles.cornerDecoration} className="top-right" />
+          <div style={kitchenStyles.cornerDecoration} className="bottom-left" />
+          <div style={kitchenStyles.cornerDecoration} className="bottom-right" />
+          
+          <div style={kitchenStyles.tabs}>
+            {Object.entries(TABS).map(([key, { icon, label }]) => (
+              <button
+                key={key}
+                style={activeTab === key ? activeTabStyles : tabStyles}
+                onClick={() => setActiveTab(key)}
+              >
+                <span style={{ fontSize: '20px' }}>{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div style={kitchenStyles.content}>
+            {renderTabContent()}
+          </div>
+        </div>
+        {selectedRecipe && (
+          <div style={kitchenStyles.details}>
+            {warningMessage && (
+              <div style={{
+                backgroundColor: gameTheme.colors.danger,
+                color: gameTheme.colors.background,
+                padding: '8px 16px',
+                marginBottom: '12px',
+                borderRadius: '4px',
+                textAlign: 'center',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                {warningMessage}
+              </div>
+            )}
+            <IngredientDetails
+              item={selectedRecipe}
+              onClose={() => {
+                setSelectedRecipe(null);
+                setWarningMessage(null);
+              }}
+              onCook={() => handleCook(selectedRecipe)}
+            />
+          </div>
+        )}
       </div>
-      <div style={kitchenStyles.content}>
-        {renderTabContent()}
+      <div style={queuePanelStyles}>
+        <PreparationQueue />
       </div>
-      {selectedRecipe && (
-        <IngredientDetails
-          item={selectedRecipe}
-          onClose={() => setSelectedRecipe(null)}
-          onCook={() => handleCook(selectedRecipe)}
-        />
-      )}
     </div>
   );
 };

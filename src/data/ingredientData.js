@@ -7,35 +7,40 @@ export const ingredients = {
     description: "Fresh vegetables from the colony's hydroponic gardens",
     baseValue: 5,
     spoilageRate: 0.2,
-    storageSpace: 1
+    storageSpace: 1,
+    initialQuantity: 5
   },
   meat: {
     name: "Meat",
     description: "Protein-rich meat from the colony's livestock",
     baseValue: 8,
     spoilageRate: 0.3,
-    storageSpace: 1
+    storageSpace: 1,
+    initialQuantity: 3
   },
   fish: {
     name: "Fish",
     description: "Freshly caught fish from the colony's aquaculture",
     baseValue: 7,
     spoilageRate: 0.4,
-    storageSpace: 1
+    storageSpace: 1,
+    initialQuantity: 2
   },
   rice: {
     name: "Rice",
     description: "Staple grain grown in the colony's fields",
     baseValue: 3,
     spoilageRate: 0.1,
-    storageSpace: 1
+    storageSpace: 1,
+    initialQuantity: 4
   },
   spices: {
     name: "Spices",
     description: "Flavorful seasonings to enhance meals",
     baseValue: 4,
     spoilageRate: 0.1,
-    storageSpace: 1
+    storageSpace: 1,
+    initialQuantity: 3
   }
 };
 

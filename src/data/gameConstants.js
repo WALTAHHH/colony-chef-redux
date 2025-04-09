@@ -8,9 +8,15 @@ export const GAME_STATES = {
 // Game phase constants
 export const GAME_PHASES = {
   PLANNING: 0,
-  PREPARATION: 1,
+  ACTION: 1,
   SERVING: 2,
   END_OF_DAY: 3
+};
+
+// Action Points constants
+export const ACTION_POINTS = {
+  MAX_AP: 10,
+  DEFAULT_MEAL_COST: 2
 };
 
 // Hunger constants

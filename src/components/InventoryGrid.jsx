@@ -1,5 +1,5 @@
 import React from 'react';
-import { ingredients } from '../data/ingredientData';
+import { ingredients, ingredientEmojiMap } from '../data/ingredientData';
 import IngredientDetails from './IngredientDetails';
 import { gameTheme } from '../theme/gameTheme';
 
@@ -16,7 +16,7 @@ const InventoryGrid = ({ inventory, ingredients, onSelect }) => {
           onClick={() => onSelect(itemId)}
         >
           <div style={itemIconStyles}>
-            {ingredient.icon || '🍖'}
+            {ingredientEmojiMap[itemId] || '📦'}
           </div>
           <div style={itemNameStyles}>{ingredient.name}</div>
           <div style={itemQuantityStyles}>x{quantity}</div>

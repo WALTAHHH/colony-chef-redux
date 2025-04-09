@@ -1,11 +1,22 @@
 import React from 'react';
-import { ingredients } from '../data/ingredientData';
+import { useGame } from '../context/GameContext';
 import { recipes } from '../data/recipeData';
+import { ingredients } from '../data/ingredientData';
 import { gameTheme } from '../theme/gameTheme';
 
 const IngredientDetails = ({ item, onClose, onCook }) => {
+  const { gameState } = useGame();
   const ingredient = ingredients[item];
   const recipe = recipes[item];
+
+  // Calculate ingredients already allocated in queue
+  const allocatedIngredients = gameState.mealQueue.reduce((acc, meal) => {
+    const recipe = recipes[meal.recipeId];
+    Object.entries(recipe.ingredients).forEach(([ingredient, quantity]) => {
+      acc[ingredient] = (acc[ingredient] || 0) + quantity;
+    });
+    return acc;
+  }, {});
 
   const renderContent = () => {
     if (ingredient) {
@@ -37,7 +48,13 @@ const IngredientDetails = ({ item, onClose, onCook }) => {
           <div style={recipeTitleContainerStyles}>
             <h3 style={titleStyles}>{recipe.name}</h3>
             {onCook && (
-              <button style={cookButtonStyles} onClick={onCook}>
+              <button 
+                style={cookButtonStyles} 
+                onClick={(e) => {
+                  e.preventDefault();
+                  onCook();
+                }}
+              >
                 Cook 🔥
               </button>
             )}
@@ -64,14 +81,23 @@ const IngredientDetails = ({ item, onClose, onCook }) => {
             <div style={statsColumnStyles}>
               <h4 style={sectionTitleStyles}>Required Ingredients</h4>
               <div style={ingredientsStyles}>
-                {Object.entries(recipe.ingredients).map(([ingredient, quantity]) => (
-                  <div key={ingredient} style={ingredientStyles}>
-                    <span style={ingredientNameStyles}>
-                      {ingredients[ingredient]?.name}
-                    </span>
-                    <span style={ingredientQuantityStyles}>x{quantity}</span>
-                  </div>
-                ))}
+                {Object.entries(recipe.ingredients).map(([ingredient, quantity]) => {
+                  const currentAmount = gameState.inventory[ingredient] || 0;
+                  const allocated = allocatedIngredients[ingredient] || 0;
+                  const available = currentAmount - allocated;
+                  const hasEnough = available >= quantity;
+                  return (
+                    <div key={ingredient} style={ingredientStyles}>
+                      <span>{ingredients[ingredient]?.name || ingredient}</span>
+                      <span style={{
+                        ...ingredientQuantityStyles,
+                        color: hasEnough ? gameTheme.colors.background : gameTheme.colors.danger
+                      }}>
+                        {quantity}/{available}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -128,7 +154,7 @@ const titleStyles = {
   fontSize: '24px',
   fontWeight: 'bold',
   margin: '0',
-  color: gameTheme.colors.highlightPrimary,
+  color: gameTheme.colors.background,
   textTransform: 'uppercase',
 };
 
@@ -178,7 +204,7 @@ const statLabelStyles = {
 const statValueStyles = {
   fontSize: '16px',
   fontWeight: 'bold',
-  color: gameTheme.colors.text,
+  color: gameTheme.colors.background,
 };
 
 const ingredientsStyles = {
@@ -194,15 +220,10 @@ const ingredientStyles = {
   padding: '4px 0',
 };
 
-const ingredientNameStyles = {
-  fontSize: '14px',
-  color: gameTheme.colors.text,
-};
-
 const ingredientQuantityStyles = {
   fontSize: '14px',
   fontWeight: 'bold',
-  color: gameTheme.colors.highlightSecondary,
+  color: gameTheme.colors.background,
 };
 
 const cookButtonStyles = {
@@ -210,23 +231,22 @@ const cookButtonStyles = {
   backgroundColor: gameTheme.colors.highlightPrimary,
   color: gameTheme.colors.background,
   padding: '8px 16px',
-  fontSize: '16px',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  marginLeft: '12px',
 };
 
 const closeButtonStyles = {
-  ...gameTheme.common.button,
   position: 'absolute',
   top: '20px',
   right: '20px',
-  padding: '8px 12px',
-  minWidth: '32px',
   backgroundColor: 'transparent',
-  color: gameTheme.colors.textDim,
-  border: `2px solid ${gameTheme.colors.border}`,
-  ':hover': {
-    backgroundColor: gameTheme.colors.border,
-    color: gameTheme.colors.text,
-  }
+  border: 'none',
+  color: gameTheme.colors.text,
+  cursor: 'pointer',
+  fontSize: '20px',
+  padding: '4px',
+  zIndex: 2,
 };
 
 export default IngredientDetails;

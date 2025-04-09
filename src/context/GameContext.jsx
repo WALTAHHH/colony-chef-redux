@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { GAME_STATES, GAME_PHASES } from '../data/gameConstants';
+import { GAME_STATES, GAME_PHASES, ACTION_POINTS } from '../data/gameConstants';
 import { recipes } from '../data/recipeData';
 import { ingredients } from '../data/ingredientData';
 import { addItems, removeItems, hasItems } from '../utils/inventoryUtils';
@@ -12,12 +12,23 @@ export const GameProvider = ({ children }) => {
     state: GAME_STATES.PLAYING,
     phase: GAME_PHASES.PLANNING,
     day: 1,
-    inventory: {},
+    inventory: {
+      vegetables: 5,
+      meat: 3,
+      fish: 3,
+      rice: 4,
+      spices: 3
+    },
     crew: initialCrew,
-    cookedMeals: [],
+    cookedMeals: ['stew', 'fishRice'],
     assignedMeals: {},
     progress: 0,
-    morale: 50
+    morale: 50,
+    actionPoints: {
+      total: ACTION_POINTS.MAX_AP,
+      spent: 0
+    },
+    mealQueue: []
   });
 
   const advancePhase = useCallback(() => {
@@ -25,7 +36,12 @@ export const GameProvider = ({ children }) => {
       const nextPhase = (prev.phase + 1) % Object.keys(GAME_PHASES).length;
       return {
         ...prev,
-        phase: nextPhase
+        phase: nextPhase,
+        // Reset spent AP when moving to next phase
+        actionPoints: {
+          ...prev.actionPoints,
+          spent: 0
+        }
       };
     });
   }, []);
@@ -56,7 +72,28 @@ export const GameProvider = ({ children }) => {
         cookedMeals: [],
         assignedMeals: {},
         progress: newProgress,
-        morale: newMorale
+        morale: newMorale,
+        // Reset AP for new day
+        actionPoints: {
+          total: ACTION_POINTS.MAX_AP,
+          spent: 0
+        }
+      };
+    });
+  }, []);
+
+  const spendActionPoints = useCallback((amount) => {
+    setGameState(prev => {
+      const newSpent = prev.actionPoints.spent + amount;
+      if (newSpent > prev.actionPoints.total) {
+        return prev; // Not enough AP
+      }
+      return {
+        ...prev,
+        actionPoints: {
+          ...prev.actionPoints,
+          spent: newSpent
+        }
       };
     });
   }, []);
@@ -84,10 +121,20 @@ export const GameProvider = ({ children }) => {
         return prev;
       }
 
+      // Check if we have enough AP
+      const apCost = recipe.actionPointCost || ACTION_POINTS.DEFAULT_MEAL_COST;
+      if (prev.actionPoints.spent + apCost > prev.actionPoints.total) {
+        return prev;
+      }
+
       return {
         ...prev,
         inventory: removeItems(prev.inventory, recipe.ingredients),
-        cookedMeals: [...prev.cookedMeals, recipeId]
+        cookedMeals: [...prev.cookedMeals, recipeId],
+        actionPoints: {
+          ...prev.actionPoints,
+          spent: prev.actionPoints.spent + apCost
+        }
       };
     });
 
@@ -121,6 +168,63 @@ export const GameProvider = ({ children }) => {
     }));
   }, []);
 
+  const addToMealQueue = useCallback((recipeId) => {
+    const recipe = recipes[recipeId];
+    if (!recipe) return false;
+
+    setGameState(prev => {
+      // Check if we have the ingredients
+      const hasIngredients = hasItems(prev.inventory, recipe.ingredients);
+
+      return {
+        ...prev,
+        mealQueue: [
+          ...prev.mealQueue,
+          {
+            recipeId,
+            hasIngredients,
+            missingIngredients: hasIngredients ? null : recipe.ingredients
+          }
+        ]
+      };
+    });
+
+    return true;
+  }, []);
+
+  const removeFromMealQueue = useCallback((index) => {
+    setGameState(prev => ({
+      ...prev,
+      mealQueue: prev.mealQueue.filter((_, i) => i !== index)
+    }));
+  }, []);
+
+  const prepareQueuedMeals = useCallback(() => {
+    setGameState(prev => {
+      const validMeals = prev.mealQueue.filter(meal => meal.hasIngredients);
+      const totalAPCost = validMeals.reduce((sum, meal) => 
+        sum + (recipes[meal.recipeId].actionPointCost || ACTION_POINTS.DEFAULT_MEAL_COST), 0);
+
+      if (totalAPCost > prev.actionPoints.total - prev.actionPoints.spent) {
+        return prev;
+      }
+
+      const newInventory = validMeals.reduce((inv, meal) => 
+        removeItems(inv, recipes[meal.recipeId].ingredients), prev.inventory);
+
+      return {
+        ...prev,
+        inventory: newInventory,
+        cookedMeals: [...prev.cookedMeals, ...validMeals.map(meal => meal.recipeId)],
+        mealQueue: [],
+        actionPoints: {
+          ...prev.actionPoints,
+          spent: prev.actionPoints.spent + totalAPCost
+        }
+      };
+    });
+  }, []);
+
   const value = {
     gameState,
     advancePhase,
@@ -130,7 +234,11 @@ export const GameProvider = ({ children }) => {
     cookMeal,
     assignMeal,
     addCrew,
-    removeCrew
+    removeCrew,
+    spendActionPoints,
+    addToMealQueue,
+    removeFromMealQueue,
+    prepareQueuedMeals
   };
 
   return (
