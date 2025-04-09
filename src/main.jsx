@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Game from './components/Game';
 import { GameProvider } from './context/GameContext';
+import App from './App';
 import './styles/global.css';
 
 // Add global styles to ensure no elements extend beyond the viewport
@@ -29,9 +29,19 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-const root = createRoot(document.getElementById('renderDiv'));
+// Create renderDiv if it doesn't exist
+let renderDiv = document.getElementById('renderDiv');
+if (!renderDiv) {
+  renderDiv = document.createElement('div');
+  renderDiv.id = 'renderDiv';
+  document.body.appendChild(renderDiv);
+}
+
+const root = createRoot(renderDiv);
 root.render(
-  <GameProvider>
-    <Game />
-  </GameProvider>
+  <React.StrictMode>
+    <GameProvider>
+      <App />
+    </GameProvider>
+  </React.StrictMode>
 ); 

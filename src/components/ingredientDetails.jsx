@@ -4,8 +4,8 @@ import { recipes } from '../data/recipeData';
 import { ingredients } from '../data/ingredientData';
 import { gameTheme } from '../theme/gameTheme';
 
-const IngredientDetails = ({ item, onClose, onCook }) => {
-  const { gameState } = useGame();
+const IngredientDetails = ({ item, onClose, onCook, isViewingRecipe = false }) => {
+  const { gameState, getMealInfo } = useGame();
   const ingredient = ingredients[item];
   const recipe = recipes[item];
 
@@ -43,11 +43,23 @@ const IngredientDetails = ({ item, onClose, onCook }) => {
     }
 
     if (recipe) {
+      // Group meals by days until spoiled
+      const spoilageGroups = {};
+      gameState.cookedMeals
+        .filter(meal => meal.id === item)
+        .forEach(meal => {
+          const mealInfo = getMealInfo(meal.id);
+          if (!mealInfo) return;
+
+          const key = mealInfo.isSpoiled ? 'spoiled' : mealInfo.daysUntilSpoiled.toString();
+          spoilageGroups[key] = (spoilageGroups[key] || 0) + 1;
+        });
+
       return (
         <div style={contentStyles}>
           <div style={recipeTitleContainerStyles}>
             <h3 style={titleStyles}>{recipe.name}</h3>
-            {onCook && (
+            {onCook && isViewingRecipe && (
               <button 
                 style={cookButtonStyles} 
                 onClick={(e) => {
@@ -76,6 +88,10 @@ const IngredientDetails = ({ item, onClose, onCook }) => {
                   <span style={statLabelStyles}>Prep Time:</span>
                   <span style={statValueStyles}>{recipe.preparationTime}</span>
                 </div>
+                <div style={statStyles}>
+                  <span style={statLabelStyles}>Spoils In:</span>
+                  <span style={statValueStyles}>{recipe.spoilageTime} days</span>
+                </div>
               </div>
             </div>
             <div style={statsColumnStyles}>
@@ -101,6 +117,37 @@ const IngredientDetails = ({ item, onClose, onCook }) => {
               </div>
             </div>
           </div>
+          {Object.keys(spoilageGroups).length > 0 && (
+            <div style={spoilageContainerStyles}>
+              <h4 style={sectionTitleStyles}>Spoilage Information</h4>
+              <div style={spoilageListStyles}>
+                {Object.entries(spoilageGroups)
+                  .sort(([timeA], [timeB]) => {
+                    if (timeA === 'spoiled') return 1;
+                    if (timeB === 'spoiled') return -1;
+                    return parseInt(timeA) - parseInt(timeB);
+                  })
+                  .map(([time, count]) => (
+                    <div 
+                      key={time} 
+                      style={{
+                        ...spoilageItemStyles,
+                        color: time === 'spoiled' 
+                          ? gameTheme.colors.danger 
+                          : parseInt(time) <= 1 
+                            ? gameTheme.colors.warning 
+                            : gameTheme.colors.text
+                      }}
+                    >
+                      {count}x {time === 'spoiled' 
+                        ? 'spoiled' 
+                        : `spoils in ${time} day${time !== '1' ? 's' : ''}`}
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -148,6 +195,7 @@ const recipeTitleContainerStyles = {
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: '20px',
+  paddingRight: '40px',
 };
 
 const titleStyles = {
@@ -238,15 +286,41 @@ const cookButtonStyles = {
 
 const closeButtonStyles = {
   position: 'absolute',
-  top: '20px',
-  right: '20px',
+  top: '15px',
+  right: '15px',
   backgroundColor: 'transparent',
   border: 'none',
   color: gameTheme.colors.text,
   cursor: 'pointer',
   fontSize: '20px',
-  padding: '4px',
+  padding: '8px',
   zIndex: 2,
+  borderRadius: '4px',
+  transition: 'background-color 0.2s ease',
+  '&:hover': {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+};
+
+const spoilageContainerStyles = {
+  marginTop: '20px',
+  borderTop: `2px solid ${gameTheme.colors.border}`,
+  paddingTop: '20px',
+};
+
+const spoilageListStyles = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  marginTop: '12px',
+};
+
+const spoilageItemStyles = {
+  fontSize: '14px',
+  color: gameTheme.colors.warning,
+  padding: '4px 8px',
+  backgroundColor: `${gameTheme.colors.warning}11`,
+  borderRadius: '4px',
 };
 
 export default IngredientDetails;

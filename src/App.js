@@ -1,13 +1,16 @@
-import React from 'react';
-import { GameProvider } from './context/GameContext';
 import Game from './components/Game';
+import { gameTheme } from './theme/gameTheme';
 
-function App() {
+const App = () => {
   return (
-    <GameProvider>
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: gameTheme.colors.background,
+      ...gameTheme.common.pixelated,
+    }}>
       <Game />
-    </GameProvider>
+    </div>
   );
-}
+};
 
 export default App; 

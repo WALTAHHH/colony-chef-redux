@@ -1,5 +1,4 @@
 import React from 'react';
-import { GameProvider } from '../context/GameContext';
 import Kitchen from './Kitchen';
 import Status from './Status';
 import MealAssignmentTable from './MealAssignmentTable';
@@ -28,7 +27,7 @@ const Game = () => {
     container: {
       display: 'flex',
       flexDirection: 'column',
-      height: '100vh',
+      height: '100%',
       backgroundColor: gameTheme.colors.background,
       ...gameTheme.common.pixelated,
       position: 'relative',
@@ -100,10 +99,11 @@ const Game = () => {
   };
 
   const mainStyles = {
-    flex: 1,
+    flex: '1 0 auto',
     padding: '20px',
     overflowY: 'auto',
     ...gameTheme.common.panel,
+    minHeight: 0,
   };
 
   const footerStyles = {
@@ -114,6 +114,8 @@ const Game = () => {
     justifyContent: 'space-between',
     alignItems: 'center',
     ...gameTheme.common.panel,
+    flexShrink: 0,
+    height: '50px',
   };
 
   const gameOverStyles = {
@@ -227,85 +229,83 @@ const Game = () => {
   };
 
   return (
-    <GameProvider>
-      <div style={gameStyles.container}>
-        <header style={headerStyles}>
-          <div style={headerInfoStyles}>
-            <div style={dayBadgeStyles}>Day {day}</div>
-            <div>{getFormattedDate(day)}</div>
-          </div>
-          <div style={phaseIndicatorStyles}>
-            {[1, 2, 3, 4].map((phaseNum) => (
-              <div
-                key={phaseNum}
-                style={{
-                  ...phaseStepStyles,
-                  backgroundColor: phase === phaseNum - 1 ? gameTheme.colors.highlightPrimary : 'transparent',
-                  color: phase === phaseNum - 1 ? gameTheme.colors.background : gameTheme.colors.text,
-                }}
-              >
-                {phaseNum}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <ActionPointsBar />
-            <div style={weatherDisplayStyles}>
-              <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
-              <div>
-                <div>{currentWeather.desc}</div>
-                <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        <main style={mainStyles}>
-          {renderPhaseContent()}
-        </main>
-        
-        {state === GAME_STATES.PLAYING && (
-          <footer style={footerStyles}>
-            <div style={phaseInfoStyles}>
-              <span>Current Phase:</span>
-              <strong>{getCurrentPhaseName()}</strong>
-            </div>
-            <button 
-              onClick={handleNextPhase}
-              style={nextPhaseButtonStyles}
+    <div style={gameStyles.container}>
+      <header style={headerStyles}>
+        <div style={headerInfoStyles}>
+          <div style={dayBadgeStyles}>Day {day}</div>
+          <div>{getFormattedDate(day)}</div>
+        </div>
+        <div style={phaseIndicatorStyles}>
+          {[1, 2, 3, 4].map((phaseNum) => (
+            <div
+              key={phaseNum}
+              style={{
+                ...phaseStepStyles,
+                backgroundColor: phase === phaseNum - 1 ? gameTheme.colors.highlightPrimary : 'transparent',
+                color: phase === phaseNum - 1 ? gameTheme.colors.background : gameTheme.colors.text,
+              }}
             >
-              {getPhaseText()}
-            </button>
-          </footer>
-        )}
-        
-        {state === GAME_STATES.VICTORY && (
-          <div style={gameOverStyles}>
-            <h2>Victory!</h2>
-            <p>You've successfully completed the expedition!</p>
-            <p>Your cooking skills kept the crew well-fed and motivated.</p>
-            <p>It took you {gameState.day} days to reach your destination.</p>
-            <button onClick={resetGame} style={gameOverButtonStyles}>
-              Play Again
-            </button>
+              {phaseNum}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <ActionPointsBar />
+          <div style={weatherDisplayStyles}>
+            <span style={{ fontSize: '24px' }}>{currentWeather.icon}</span>
+            <div>
+              <div>{currentWeather.desc}</div>
+              <div style={{ fontSize: '14px' }}>{currentWeather.temp}</div>
+            </div>
           </div>
-        )}
-        
-        {state === GAME_STATES.DEFEAT && (
-          <div style={gameOverStyles}>
-            <h2>Expedition Failed</h2>
-            <p>All your crew members are starving!</p>
-            <p>The expedition has been abandoned on day {gameState.day}.</p>
-            <p>Progress made: {Math.floor(gameState.progress)}%</p>
-            <button onClick={resetGame} style={gameOverButtonStyles}>
-              Try Again
-            </button>
+        </div>
+      </header>
+      
+      <main style={mainStyles}>
+        {renderPhaseContent()}
+      </main>
+      
+      {state === GAME_STATES.PLAYING && (
+        <footer style={footerStyles}>
+          <div style={phaseInfoStyles}>
+            <span>Current Phase:</span>
+            <strong>{getCurrentPhaseName()}</strong>
           </div>
-        )}
-        
-        <ScenarioModal />
-      </div>
-    </GameProvider>
+          <button 
+            onClick={handleNextPhase}
+            style={nextPhaseButtonStyles}
+          >
+            {getPhaseText()}
+          </button>
+        </footer>
+      )}
+      
+      {state === GAME_STATES.VICTORY && (
+        <div style={gameOverStyles}>
+          <h2>Victory!</h2>
+          <p>You've successfully completed the expedition!</p>
+          <p>Your cooking skills kept the crew well-fed and motivated.</p>
+          <p>It took you {gameState.day} days to reach your destination.</p>
+          <button onClick={resetGame} style={gameOverButtonStyles}>
+            Play Again
+          </button>
+        </div>
+      )}
+      
+      {state === GAME_STATES.DEFEAT && (
+        <div style={gameOverStyles}>
+          <h2>Expedition Failed</h2>
+          <p>All your crew members are starving!</p>
+          <p>The expedition has been abandoned on day {gameState.day}.</p>
+          <p>Progress made: {Math.floor(gameState.progress)}%</p>
+          <button onClick={resetGame} style={gameOverButtonStyles}>
+            Try Again
+          </button>
+        </div>
+      )}
+      
+      <ScenarioModal />
+    </div>
   );
 };
 

@@ -71,8 +71,21 @@ const Kitchen = () => {
   const mainPanelStyles = {
     flex: 1,
     display: 'flex',
-    flexDirection: 'column',
     gap: '20px',
+  };
+
+  const leftPanelStyles = {
+    width: '60%',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
+  const rightPanelStyles = {
+    width: '40%',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: gameTheme.colors.panel,
+    ...gameTheme.common.panel,
   };
 
   const queuePanelStyles = {
@@ -227,15 +240,18 @@ const Kitchen = () => {
     meal: {
       ...gameTheme.common.panel,
       position: 'relative',
-      '&::after': {
-        content: '"✓"',
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        color: gameTheme.colors.highlightPrimary,
-        fontSize: '16px',
-        fontWeight: 'bold'
+      cursor: 'pointer',
+      padding: '15px',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
+        borderColor: gameTheme.colors.highlightPrimary,
       }
+    },
+    selectedMeal: {
+      borderColor: gameTheme.colors.highlightPrimary,
+      backgroundColor: `${gameTheme.colors.highlightPrimary}11`,
     },
     mealName: {
       fontSize: '14px',
@@ -246,7 +262,18 @@ const Kitchen = () => {
     mealDescription: {
       fontSize: '12px',
       color: gameTheme.colors.text,
-      opacity: 0.8
+      opacity: 0.8,
+      marginBottom: '8px'
+    },
+    mealCount: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '12px',
+      color: gameTheme.colors.textDim,
+      marginTop: '8px',
+      borderTop: `1px solid ${gameTheme.colors.border}`,
+      paddingTop: '8px'
     }
   };
 
@@ -263,18 +290,44 @@ const Kitchen = () => {
       case 'recipes':
         return renderRecipes();
       case 'cooked':
+        // Group identical meals
+        const groupedCookedMeals = cookedMeals.reduce((acc, mealId) => {
+          const existingGroup = acc.find(g => g.id === mealId);
+          if (existingGroup) {
+            existingGroup.count++;
+          } else {
+            acc.push({ id: mealId, count: 1 });
+          }
+          return acc;
+        }, []);
+
         return (
           <div style={cookedStyles.container}>
-            {cookedMeals.map((mealId) => (
-              <div key={mealId} style={cookedStyles.meal}>
-                <div style={cookedStyles.mealName}>
-                  {recipes[mealId]?.name}
+            {groupedCookedMeals.map((meal) => {
+              const recipe = recipes[meal.id];
+              if (!recipe) return null;
+
+              return (
+                <div 
+                  key={meal.id} 
+                  style={{
+                    ...cookedStyles.meal,
+                    ...(selectedRecipe === meal.id ? cookedStyles.selectedMeal : {})
+                  }}
+                  onClick={() => setSelectedRecipe(meal.id)}
+                >
+                  <div style={cookedStyles.mealName}>
+                    {recipe.name}
+                  </div>
+                  <div style={cookedStyles.mealDescription}>
+                    {recipe.description}
+                  </div>
+                  <div style={cookedStyles.mealCount}>
+                    <span>Quantity: {meal.count}x</span>
+                  </div>
                 </div>
-                <div style={cookedStyles.mealDescription}>
-                  {recipes[mealId]?.description}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       default:
@@ -361,54 +414,68 @@ const Kitchen = () => {
   return (
     <div style={containerStyles}>
       <div style={mainPanelStyles}>
-        <div style={kitchenStyles.container}>
-          <div style={kitchenStyles.cornerDecoration} className="top-left" />
-          <div style={kitchenStyles.cornerDecoration} className="top-right" />
-          <div style={kitchenStyles.cornerDecoration} className="bottom-left" />
-          <div style={kitchenStyles.cornerDecoration} className="bottom-right" />
-          
-          <div style={kitchenStyles.tabs}>
-            {Object.entries(TABS).map(([key, { icon, label }]) => (
-              <button
-                key={key}
-                style={activeTab === key ? activeTabStyles : tabStyles}
-                onClick={() => setActiveTab(key)}
-              >
-                <span style={{ fontSize: '20px' }}>{icon}</span>
-                {label}
-              </button>
-            ))}
-          </div>
-          <div style={kitchenStyles.content}>
-            {renderTabContent()}
+        <div style={leftPanelStyles}>
+          <div style={kitchenStyles.container}>
+            <div style={kitchenStyles.cornerDecoration} className="top-left" />
+            <div style={kitchenStyles.cornerDecoration} className="top-right" />
+            <div style={kitchenStyles.cornerDecoration} className="bottom-left" />
+            <div style={kitchenStyles.cornerDecoration} className="bottom-right" />
+            
+            <div style={kitchenStyles.tabs}>
+              {Object.entries(TABS).map(([key, { icon, label }]) => (
+                <button
+                  key={key}
+                  style={activeTab === key ? activeTabStyles : tabStyles}
+                  onClick={() => setActiveTab(key)}
+                >
+                  <span style={{ fontSize: '20px' }}>{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={kitchenStyles.content}>
+              {renderTabContent()}
+            </div>
           </div>
         </div>
-        {selectedRecipe && (
-          <div style={kitchenStyles.details}>
-            {warningMessage && (
-              <div style={{
-                backgroundColor: gameTheme.colors.danger,
-                color: gameTheme.colors.background,
-                padding: '8px 16px',
-                marginBottom: '12px',
-                borderRadius: '4px',
-                textAlign: 'center',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                {warningMessage}
-              </div>
-            )}
-            <IngredientDetails
-              item={selectedRecipe}
-              onClose={() => {
-                setSelectedRecipe(null);
-                setWarningMessage(null);
-              }}
-              onCook={() => handleCook(selectedRecipe)}
-            />
-          </div>
-        )}
+        <div style={rightPanelStyles}>
+          {selectedRecipe && (
+            <>
+              {warningMessage && (
+                <div style={{
+                  backgroundColor: gameTheme.colors.danger,
+                  color: gameTheme.colors.background,
+                  padding: '8px 16px',
+                  marginBottom: '12px',
+                  borderRadius: '4px',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}>
+                  {warningMessage}
+                </div>
+              )}
+              <IngredientDetails
+                item={selectedRecipe}
+                onClose={() => {
+                  setSelectedRecipe(null);
+                  setWarningMessage(null);
+                }}
+                onCook={() => handleCook(selectedRecipe)}
+                isViewingRecipe={activeTab === 'recipes'}
+              />
+            </>
+          )}
+          {!selectedRecipe && (
+            <div style={{
+              padding: '20px',
+              textAlign: 'center',
+              color: gameTheme.colors.textDim
+            }}>
+              Select a recipe or ingredient to view details
+            </div>
+          )}
+        </div>
       </div>
       <div style={queuePanelStyles}>
         <PreparationQueue />

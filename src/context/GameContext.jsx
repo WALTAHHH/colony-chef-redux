@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { GAME_STATES, GAME_PHASES, ACTION_POINTS } from '../data/gameConstants';
-import { recipes } from '../data/recipeData';
+import { recipes, getSpoiledRecipe } from '../data/recipeData';
 import { ingredients } from '../data/ingredientData';
 import { addItems, removeItems, hasItems } from '../utils/inventoryUtils';
 import { initialCrew } from '../data/crewData';
@@ -20,7 +20,7 @@ export const GameProvider = ({ children }) => {
       spices: 3
     },
     crew: initialCrew,
-    cookedMeals: ['stew', 'fishRice'],
+    cookedMeals: [],
     assignedMeals: {},
     progress: 0,
     morale: 50,
@@ -65,11 +65,23 @@ export const GameProvider = ({ children }) => {
         100
       );
 
+      // Check for meal spoilage
+      const updatedCookedMeals = prev.cookedMeals.map(meal => {
+        const recipe = recipes[meal.id];
+        if (!recipe) return meal; // Skip if recipe doesn't exist
+        
+        const daysSinceCooking = prev.day - meal.cookedOn;
+        if (!meal.isSpoiled && daysSinceCooking >= recipe.spoilageTime) {
+          return { ...meal, isSpoiled: true };
+        }
+        return meal;
+      });
+
       return {
         ...prev,
         day: prev.day + 1,
         phase: GAME_PHASES.PLANNING,
-        cookedMeals: [],
+        cookedMeals: updatedCookedMeals,
         assignedMeals: {},
         progress: newProgress,
         morale: newMorale,
@@ -130,7 +142,11 @@ export const GameProvider = ({ children }) => {
       return {
         ...prev,
         inventory: removeItems(prev.inventory, recipe.ingredients),
-        cookedMeals: [...prev.cookedMeals, recipeId],
+        cookedMeals: [...prev.cookedMeals, {
+          id: recipeId,
+          cookedOn: prev.day,
+          isSpoiled: false
+        }],
         actionPoints: {
           ...prev.actionPoints,
           spent: prev.actionPoints.spent + apCost
@@ -141,14 +157,41 @@ export const GameProvider = ({ children }) => {
     return true;
   }, []);
 
-  const assignMeal = useCallback((crewId, mealId) => {
-    setGameState(prev => ({
-      ...prev,
-      assignedMeals: {
-        ...prev.assignedMeals,
-        [crewId]: mealId
+  const assignMeal = useCallback((crewId, mealId, slotIndex, isSnack = false) => {
+    setGameState(prev => {
+      // If mealId is null, we're removing a meal
+      if (mealId === null) {
+        const newAssignedMeals = { ...prev.assignedMeals };
+        delete newAssignedMeals[`${crewId}-${isSnack ? 's' : 'm'}${slotIndex}`];
+        return {
+          ...prev,
+          assignedMeals: newAssignedMeals
+        };
       }
-    }));
+
+      // Check if the meal is still available
+      const mealCount = prev.cookedMeals.filter(id => id === mealId).length;
+      const assignedCount = Object.values(prev.assignedMeals).filter(id => id === mealId).length;
+      
+      if (assignedCount >= mealCount) {
+        return prev; // No more servings available
+      }
+
+      // Check if the slot is already taken
+      const slotKey = `${crewId}-${isSnack ? 's' : 'm'}${slotIndex}`;
+      const existingMealInSlot = prev.assignedMeals[slotKey];
+      if (existingMealInSlot) {
+        return prev; // Slot is taken
+      }
+
+      return {
+        ...prev,
+        assignedMeals: {
+          ...prev.assignedMeals,
+          [slotKey]: mealId
+        }
+      };
+    });
   }, []);
 
   const addCrew = useCallback((crewMember) => {
@@ -225,6 +268,22 @@ export const GameProvider = ({ children }) => {
     });
   }, []);
 
+  const getMealInfo = useCallback((mealId) => {
+    const meal = gameState.cookedMeals.find(m => m.id === mealId);
+    if (!meal) return null;
+
+    const recipe = meal.isSpoiled ? getSpoiledRecipe(mealId) : recipes[mealId];
+    const daysSinceCooking = gameState.day - meal.cookedOn;
+    const daysUntilSpoiled = meal.isSpoiled ? 0 : recipe.spoilageTime - daysSinceCooking;
+
+    return {
+      ...meal,
+      ...recipe,
+      daysSinceCooking,
+      daysUntilSpoiled
+    };
+  }, [gameState.cookedMeals, gameState.day]);
+
   const value = {
     gameState,
     advancePhase,
@@ -238,7 +297,8 @@ export const GameProvider = ({ children }) => {
     spendActionPoints,
     addToMealQueue,
     removeFromMealQueue,
-    prepareQueuedMeals
+    prepareQueuedMeals,
+    getMealInfo
   };
 
   return (
